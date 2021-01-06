@@ -1,0 +1,64 @@
+!=======================================================================        
+!      
+!     This is the species mechanism in CHEMKIN format asociated with
+!     USERC-subroutine for 14-steps C2H5OH Reduced mechanism 
+!     for Cosilab program. 
+! 
+!     A. Millan-Merino, E. Fernandez-Tarrazo, M. Sanchez-Sanz, 
+!     F. A. Williams, A Multiporpuse Reduced Mechanism for 
+!     Ethanol Combustion.
+!=======================================================================        
+!                                                                               
+!     ============================================================              
+!     !                                                          !                          
+!     !                                                          !              
+!     !                    Reduced_14 mechanism                  ! 
+!     !                                                          ! 
+!     !                          based on                        !
+!     !          San Diego mechanism, version 2016-12-20         !
+!     !                                                          !              
+!     !             Universidad Carlos III de Madrid             !              
+!     !                 Fluid Mechanics Research                 !              
+!     !                  http://fluidosuc3m.es                   !              
+!     !                                                          ! 
+!     !     date:       18-12-2017                               ! 
+!     !     Author:     A. Millan-Merino,      UC3M              !     
+!     !                 E. Fernandez-Tarrazo,  UC3M              !              
+!     !                 M. Sanchez-Sanz,       UC3M              !              
+!     !                 F. A. Williams,        UCSD              !              
+!     !                                                          !              
+!     ============================================================                    
+!                                                                               
+!                                                                               
+!======================================================================= 
+
+ELEMENTS
+N
+AR
+HE
+H
+O
+C
+END
+
+SPECIES
+N2
+AR
+HE
+H
+O2
+OH
+H2
+H2O
+HO2
+CO
+CO2
+CH3
+CH2O
+C2H4
+H2O2
+C2H2
+CH3CHO
+C2H5OH
+CH3CH2O
+END
