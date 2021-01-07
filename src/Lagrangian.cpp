@@ -456,15 +456,13 @@ void Lagrangian::setMpdot(doublereal mdot)
 
 doublereal Lagrangian::mddot(size_t n)
 {
-    const doublereal RR = 8314;
-    const doublereal MWf = 46.0;//only for ethanol
+    const doublereal MWf = 46.0;//TODO:only for ethanol
     //all parameters needed:
     doublereal Ni;
     doublereal kc;
     doublereal Cs;
     doublereal Cinf;
     doublereal psat;
-    doublereal Ts;
     doublereal Sh;
     doublereal Red;
     doublereal Sc;
@@ -480,29 +478,23 @@ doublereal Lagrangian::mddot(size_t n)
     for(size_t k=0; k<Yc.size(); ++k){
         Yc[k] = Y_[k][n];
     }
-    //1/3 rule to calc the surface temperature:
-    Ts = (2*Tp[n] + Tinf)/3;
 
-    //calculate the surface values:
-    doublereal TRatio = Tinf/Ts;
-    doublereal mus = muG/TRatio;
-    doublereal rhos = rhoG*TRatio;
-    // std::cout << "T_surf = " << Ts << std::endl;
+    //calculate the surface (vapour film) values:
+    doublereal Ts, rhos, mus, Pr, kappas;
+    Ts = (2*Tp[n] + Tinf)/3;
+    const doublereal TRatio = Tinf/Ts;
+    rhos = rhoG*TRatio;
+    mus = muG/TRatio;
+
     // saturation pressure for species i [pa]
-    // - carrier phase pressure assumed equal to the liquid vapour pressure
-    //   close to the surface
-    // NOTE: if pSat > pc then particle is superheated
-    // calculated evaporation rate will be greater than that of a particle
-    // at boiling point, but this is not a boiling model
     psat = pv(Tinf);
-    // std::cout << "\nsaturated pressure of fuel pSat = " << psat << std::endl;
+
     //vapour diffusivity [m2/s]:
-    // D = Dab(pc, Ts, 28.0);
-    D = 1.5e-7;
-    // std::cout << "\nvapour diffusivity of ethanol D = " << D << std::endl;
+    D = Dab(pc, Ts, 28.0);
+    // D = 1.5e-7;
+
     //Schmidt number:
     Sc = mus/(rhos*D + small);
-    // Sc = 0.75;
 
     //droplet Reynold's number:
     Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
@@ -510,8 +502,10 @@ doublereal Lagrangian::mddot(size_t n)
     //Ranz-Marshall:
     Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
 
+    std::cout<<"Shwood number Sh = "<< Sh << std::endl;
+
     //species volume fraction in the carrier gas:
-    //the ethanol index is k = 30:
+    //the fuel index is k = 30:
     vector_fp Xc_(Yc.size(), 0.0);
     for(size_t k=0; k<Yc.size(); ++k){
         Xc_[k] = Yc[k]/mw[k];
@@ -521,13 +515,13 @@ doublereal Lagrangian::mddot(size_t n)
         Xc += Xc_[k];
     }
     Xc = Xc_[30]/Xc;
-    // std::cout << "\n$$$ ethanol in carrier phase Xc = " << Xc << std::endl;  
+
     //vapor concentration at surface [kmol/m3] at film temperature:
     Cs = psat/(RR*Ts);
 
     //vapor concentration in bulk gas [kmol/m3] at film temperature:
     Cinf = Xc*pc/(RR*Ts);
-    // std::cout << "\ncarrier phase vapour pressure = " << Xc*pc << std::endl;
+
     //mass transfer coefficient [m/s]:
     kc = Sh*D/(dp[n] + small);
 
@@ -546,30 +540,50 @@ doublereal Lagrangian::Tddot(size_t n)
     doublereal md = mp[n]/Nd;
     doublereal Td = Tp[n];
     //For carrier phase:
-    doublereal cp = cp_[n];
+    doublereal pc = p0;
+    doublereal cpG = cp_[n];
     doublereal TG = T_[n];
     doublereal rhoG = rho_[n];
     doublereal uG = u_[n];
     doublereal muG = mu_[n];
-    doublereal mddot_ = mddot(n);
+    doublereal kG = kappa_[n];
+    vector_fp Yc(Y_.size(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Yc[k] = Y_[k][n];
+    }
     
-    doublereal Ts = (2*Td+TG)/3;
+    //mass transfer rate:
+    doublereal mddot_ = mddot(n);
 
+    //species volume fraction in the carrier gas:
+    //the fuel index is k = 30:
+    vector_fp Xc_(Yc.size(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Xc_[k] = Yc[k]/mw[k];
+    }
+    double Xc = 0;
+    for(size_t k=0; k<Xc_.size(); ++k){
+        Xc += Xc_[k];
+    }
+    Xc = Xc_[30]/Xc;
+
+    //calculate the surface(vapour film) values:
+    doublereal Ts = (2*Td+TG)/3;
     doublereal TRatio = TG/Ts;
-    doublereal k = kappa_[n];
-    doublereal ks = 0.5*(kappav(Ts) + k/TRatio);
-    // doublereal ks = 0.2;
+    doublereal ks = 0.5*(kappav(Ts) + kG/TRatio);
     doublereal mus = muG/TRatio;
-    std::cout << "\nvapour viscosity mus = " << mus << std::endl;
     doublereal rhos = rhoG*TRatio;
-    doublereal cps = cpv(Ts);
+
+    // doublereal cps = cpv(Ts);
+    doublereal cps = 1.8e+3;
     std::cout << "\nvapour heat capacity cps = " << cps << std::endl;
+
     doublereal Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
+
     doublereal Pr = std::max(mus*(cps/ks), small);
-    // const doublereal Pr = 0.75;
+    
     doublereal Nu = 2.0 + 0.6*std::pow(Red, 0.5)*std::pow(Pr, 0.33333);
-    // std::cout << "\n$$$ liquid heat capacity cld = " << cld(Td) << std::endl;
-    // std::cout << "\n$$$ surface temperature Ts = " << Ts << std::endl;
+
     doublereal tddot = -(mddot_/(md*cld(Td)))*Lv(Td) + (Pi*dp[n]*Nu*ks/(md*cld(Td)))*(TG-Td);
     
     return tddot;
