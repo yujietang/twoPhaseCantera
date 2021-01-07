@@ -298,6 +298,9 @@ class Lagrangian
         //feedback from lagrangian field to Eulerian field:
         vector_fp mtf_; //mass transfer
         vector_fp htf_; //heat transfer
+
+        //some const:
+        const doublereal RR = 8314.0;
 };
 }
 
