@@ -273,59 +273,59 @@ void Lagrangian::solve()
         std::cout << "******************** End Tracking ********************"
                 << "\n" << std::endl;
     }
-    for(size_t ip = 0; ip < mp.size(); ++ip)
-    {
-        std::cout << "\n******************| Parcel [" 
-                    << ip
-                    << "]: xp = "
-                    << xp[ip] << " |******************\n"
-                    << std::endl;
-        std::cout << "\n****** Parcel [" 
-                    << ip
-                    << "]: MASS = "
-                    << mp[ip] << "\n"
-                    << std::endl;
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: DIAMETER = "
-                    << dp[ip] << "\n"
-                    << std::endl;
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: rho = "
-                    << rhop[ip] << "\n"
-                    << std::endl;             
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: Tp = "
-                    << Tp[ip] << "\n"
-                    << std::endl;        
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: up = "
-                    << up[ip] << "\n"
-                    << std::endl;  
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: mtf = "
-                    << mtfp_[ip] << "\n"
-                    << std::endl;         
-        std::cout << "****** Parcel [" 
-                    << ip
-                    << "]: htf = "
-                    << htfp_[ip] << "\n"
-                    << std::endl;         
-        std::cout << "****** Droplet [" 
-                    << ip
-                    << "]: mtf = "
-                    << mtfd_[ip] << "\n"
-                    << std::endl;         
-        std::cout << "****** Droplet [" 
-                    << ip
-                    << "]: htf = "
-                    << htfd_[ip] << "\n"
-                    << std::endl;     
-    }
+    // for(size_t ip = 0; ip < mp.size(); ++ip)
+    // {
+    //     std::cout << "\n******************| Parcel [" 
+    //                 << ip
+    //                 << "]: xp = "
+    //                 << xp[ip] << " |******************\n"
+    //                 << std::endl;
+    //     std::cout << "\n****** Parcel [" 
+    //                 << ip
+    //                 << "]: MASS = "
+    //                 << mp[ip] << "\n"
+    //                 << std::endl;
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: DIAMETER = "
+    //                 << dp[ip] << "\n"
+    //                 << std::endl;
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: rho = "
+    //                 << rhop[ip] << "\n"
+    //                 << std::endl;             
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: Tp = "
+    //                 << Tp[ip] << "\n"
+    //                 << std::endl;        
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: up = "
+    //                 << up[ip] << "\n"
+    //                 << std::endl;  
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: mtf = "
+    //                 << mtfp_[ip] << "\n"
+    //                 << std::endl;         
+    //     std::cout << "****** Parcel [" 
+    //                 << ip
+    //                 << "]: htf = "
+    //                 << htfp_[ip] << "\n"
+    //                 << std::endl;         
+    //     std::cout << "****** Droplet [" 
+    //                 << ip
+    //                 << "]: mtf = "
+    //                 << mtfd_[ip] << "\n"
+    //                 << std::endl;         
+    //     std::cout << "****** Droplet [" 
+    //                 << ip
+    //                 << "]: htf = "
+    //                 << htfd_[ip] << "\n"
+    //                 << std::endl;     
+    // }
 }
 
 void Lagrangian::inject()
@@ -491,8 +491,7 @@ doublereal Lagrangian::mddot(size_t n)
 
     //vapour diffusivity [m2/s]:
     D = Dab(pc, Ts, 28.0);
-    // D = 1.5e-7;
-
+ 
     //Schmidt number:
     Sc = mus/(rhos*D + small);
 
@@ -501,8 +500,6 @@ doublereal Lagrangian::mddot(size_t n)
     
     //Ranz-Marshall:
     Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
-
-    std::cout<<"Shwood number Sh = "<< Sh << std::endl;
 
     //species volume fraction in the carrier gas:
     //the fuel index is k = 30:
@@ -528,15 +525,35 @@ doublereal Lagrangian::mddot(size_t n)
     //molar flux of vapour [kmol/m2/s]:
     Ni = std::max(kc*(Cs - Cinf), 0.0);
     
+    /**************************************** Debug ****************************************/
+    std::cout << "\nvapor pressure pv = " << psat << std::endl;
+    std::cout << "vapor diffusivity Dab = " << D << "\n" << std::endl;
+
+    std::cout << "species volume fraction in the carrier phase Xc = " << Xc << std::endl;
+    std::cout << "vapor concentration at surface Cs = " << Cs << std::endl;
+    std::cout << "vapor concentration in the bulk gas Cinf = " << Cinf << "\n" << std::endl;
+
+    std::cout << "mass transfer coeff. kc = " << kc << std::endl;
+    std::cout << "molar flux of vapor Ni = " << Ni << "\n" << std::endl;
+ 
+    std::cout << "Sc = " << Sc << std::endl;
+    std::cout << "Red = " << Red << std::endl;
+    std::cout << "Sh = " << Sh << std::endl;
+    /**************************************** Debug ****************************************/
+
+
     //Return the mass transfer [kg/s]:
     doublereal massTranfRate = -Pi*Ni*dp[n]*dp[n]*MWf;
     
+    
+
     return massTranfRate;
 }
 
 doublereal Lagrangian::Tddot(size_t n)
 {
     //For droplet:
+    const doublereal MWf = 46.0;//TODO:only for ethanol
     doublereal md = mp[n]/Nd;
     doublereal Td = Tp[n];
     //For carrier phase:
@@ -551,9 +568,12 @@ doublereal Lagrangian::Tddot(size_t n)
     for(size_t k=0; k<Yc.size(); ++k){
         Yc[k] = Y_[k][n];
     }
-    
+
     //mass transfer rate:
     doublereal mddot_ = mddot(n);
+
+    // saturation pressure for species i [pa]
+    doublereal psat = pv(TG);
 
     //species volume fraction in the carrier gas:
     //the fuel index is k = 30:
@@ -570,13 +590,14 @@ doublereal Lagrangian::Tddot(size_t n)
     //calculate the surface(vapour film) values:
     doublereal Ts = (2*Td+TG)/3;
     doublereal TRatio = TG/Ts;
-    doublereal ks = 0.5*(kappav(Ts) + kG/TRatio);
+    doublereal Cs = psat/(RR*Ts);
+    doublereal Cstot = p0/(RR*Ts);
+    doublereal Xs = (2*Cs + Xc*Cstot)/3;
+    doublereal rhos = Xs*MWf*p0/(RR*Ts);
     doublereal mus = muG/TRatio;
-    doublereal rhos = rhoG*TRatio;
+    doublereal ks = kappav(Ts);
 
-    // doublereal cps = cpv(Ts);
-    doublereal cps = 1.8e+3;
-    std::cout << "\nvapour heat capacity cps = " << cps << std::endl;
+    doublereal cps = Xs*cpG; //TODO: the value has problem
 
     doublereal Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
 
@@ -584,8 +605,26 @@ doublereal Lagrangian::Tddot(size_t n)
     
     doublereal Nu = 2.0 + 0.6*std::pow(Red, 0.5)*std::pow(Pr, 0.33333);
 
-    doublereal tddot = -(mddot_/(md*cld(Td)))*Lv(Td) + (Pi*dp[n]*Nu*ks/(md*cld(Td)))*(TG-Td);
+    doublereal tddot = (mddot_/(md*cld(Td)))*Lv(Td) + (Pi*dp[n]*Nu*ks/(md*cld(Td)))*(TG-Td);
+
+    /**************************************** Debug ****************************************/
+    std::cout << "suface species mole fraction Xs = " << Xs << std::endl;
+    std::cout << "suface Temperature Ts = " << Ts << std::endl;
+    std::cout << "suface vapor density rhos = " << rhos << std::endl;
+    std::cout << "suface vapor heat capacity cps = " << cps << std::endl;
+    std::cout << "suface vapor dynamic viscosity mus = " << mus << std::endl;
+    std::cout << "suface vapor heat conductivity kappas = " << ks << std::endl;
+    std::cout << "Prandtl Number Pr = " << Pr << std::endl;
+    std::cout << "Nussult Number Nu = " << Nu << "\n" << std::endl;
+
+    std::cout << "liquid heat capacity cld = " << cld(Td) << std::endl;
+    std::cout << "liquid Latent heat Lv = " << Lv(Td) << std::endl;
+    std::cout << "liquid Temperature Td = " << Td << "\n" << std::endl;
     
+    std::cout << "mass transfer rate = " << mddot_ << std::endl;
+    std::cout << "The 1st term of tdot = " << (mddot_/(md*cld(Td)))*Lv(Td) << std::endl;
+    std::cout << "The 2nd term of tdot = " << (Pi*dp[n]*Nu*ks/(md*cld(Td)))*(TG-Td) << "\n" << std::endl;
+    /**************************************** Debug ****************************************/
     return tddot;
 }
 
