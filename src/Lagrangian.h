@@ -41,6 +41,7 @@ class Lagrangian
         void evalTransf();
         
         //tracking the parcel:
+        void _solve();
         void solve();
 
         //initialize the injection:
@@ -234,6 +235,9 @@ class Lagrangian
             }
             
         }
+
+        void parcel_time_advancing(double & xp_curr, double & up_curr, int n, bool inertia_parcel);
+        double parcel_acc(double & _xp, double & _up, const double & diameter_p, const double & density_p);
 
         void write() const;
     private:

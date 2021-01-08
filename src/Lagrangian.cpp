@@ -169,7 +169,201 @@ void Lagrangian::evalTransf()
     }
 }
 
+void Lagrangian::parcel_time_advancing(double & xp_curr, double & up_curr, int n, bool inertia_parcel)
+{
+    xp_curr = xp[n];
+    up_curr = up[n];
+    if(!inertia_parcel) up_curr = intpfield(ug, z, xp_curr);
+    // d\ xp/dt = up;  d\ up/dt = acceleration
+    double xp_hold = xp_curr, up_hold = up_curr;
+    double xp_carry = xp_curr, up_carry = up_curr;
+    double dxp_dt, dup_dt;
+
+    double diameter_p, density_p;
+    density_p = rhold(Tp[n]);
+    diameter_p = dp[n]; //assuming fixed parcel density and diameter during one time step increment, can be further refined
+
+    //RK4 parameters
+    int Nstages = 4;
+    vector_fp Alpha{0, 0.5, 0.5, 1}; 
+    vector_fp Beta{1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+    double alpha, beta;
+
+    for(int j=0; j<Nstages; j++){ // Begin RK4
+        dxp_dt = up_carry;
+        dup_dt = parcel_acc(xp_carry, up_carry, diameter_p, density_p);
+
+        if(j != Nstages-1){
+            alpha = Alpha[j+1];
+            xp_carry = xp_hold + alpha * dtlag * dxp_dt;
+            up_carry = up_hold + alpha * dtlag * dup_dt;
+            if(!inertia_parcel) up_carry = intpfield(ug, z, xp_carry);
+        }
+
+        beta = Beta[j];
+        xp_curr += beta * dtlag * dxp_dt;
+        up_curr += beta * dtlag * dup_dt;
+        if(!inertia_parcel) up_curr = intpfield(ug, z, xp_curr);
+    }
+
+}
+
+double Lagrangian::parcel_acc(double & _xp, double & _up, const double & diameter_p, const double & density_p)
+{
+    double acc = 0.0;
+    double _rhog, _Red, _ug, _mug;
+
+    _rhog = intpfield(rhog, z, _xp);
+    _ug = intpfield(ug, z, _xp);
+    _mug = intpfield(mug, z, _xp);
+
+    _Red = _rhog * std::abs(_up - _ug) * diameter_p / (_mug + small);
+    acc = 0.75 * _rhog * Cd(_Red) * std::abs(_up - _ug) * (_ug - _up) /
+        (density_p * diameter_p + small);
+    return acc;
+}
+
 void Lagrangian::solve()
+{
+    clearParcel();
+    this->inject();
+
+    doublereal _xp = 0;
+    doublereal _up = 0;
+    doublereal _ug = ug[0];
+    doublereal _rhog = rhog[0];
+    doublereal _mug = mug[0];
+    doublereal _Red;
+    bool inertia_parcel = false;
+    //tracking step n:
+    size_t marchingStep = 8000;
+    for(size_t n=1; n<marchingStep; ++n)
+    {
+        std::cout << "**************** Tracking the parcel [ "
+                    << n << " ] ****************\n" << std::endl;
+
+        parcel_time_advancing(_xp, _up, n-1, inertia_parcel);
+
+        //parcel's position:
+        xp.push_back(_xp);
+        up.push_back(_up);
+        std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
+        std::cout << "Parcel's velocity = " << up[up.size()-1] << "\n" << std::endl;
+
+        evalParcelFlow();
+
+        //parcel's mass:
+        mp.push_back(
+            // mp[n-1]
+            mp[n-1] + Nd*dtlag*mddot(n-1)
+        );
+
+        //parcel's temperature:
+        Tp.push_back(
+            // Tp[n-1]
+            Tp[n-1] + Nd*dtlag*Tddot(n-1)
+        );
+
+        //parcel's density
+        rhop.push_back(
+            rhold(Tp[n])
+        ); 
+
+        //parcel's diameter 
+        dp.push_back(
+            pow(6*mp[n]/(Pi*rhop[n]+small), 0.33333)
+        );
+
+        
+        /******For droplet******/
+        //mass transfer:
+        mtfd_.push_back(
+            mddot(n)
+        );
+        //heat transfer:
+        htfd_.push_back(
+            Tddot(n)
+        );
+        /******For parcel******/
+        //mass transfer:
+        mtfp_.push_back(
+            mtfp(n)
+        );
+        //heat transfer:
+        htfp_.push_back(
+            htfp(n)
+        );
+
+        ++Np;
+
+        if(Np != mp.size()){
+            std::cerr << "### Error: parcel's number is not equal to Np! ###";
+        }
+
+        if(dp[n]<small || mp[n]<small)
+        {
+            break;
+        }
+
+        std::cout << "******************** End Tracking ********************"
+                << "\n" << std::endl;
+    }
+    for(size_t ip = 0; ip < mp.size(); ++ip)
+    {
+        std::cout << "\n******************| Parcel [" 
+                    << ip
+                    << "]: xp = "
+                    << xp[ip] << " |******************\n"
+                    << std::endl;
+        std::cout << "\n****** Parcel [" 
+                    << ip
+                    << "]: MASS = "
+                    << mp[ip] << "\n"
+                    << std::endl;
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: DIAMETER = "
+                    << dp[ip] << "\n"
+                    << std::endl;
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: rho = "
+                    << rhop[ip] << "\n"
+                    << std::endl;             
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: Tp = "
+                    << Tp[ip] << "\n"
+                    << std::endl;        
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: up = "
+                    << up[ip] << "\n"
+                    << std::endl;  
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: mtf = "
+                    << mtfp_[ip] << "\n"
+                    << std::endl;         
+        std::cout << "****** Parcel [" 
+                    << ip
+                    << "]: htf = "
+                    << htfp_[ip] << "\n"
+                    << std::endl;         
+        std::cout << "****** Droplet [" 
+                    << ip
+                    << "]: mtf = "
+                    << mtfd_[ip] << "\n"
+                    << std::endl;         
+        std::cout << "****** Droplet [" 
+                    << ip
+                    << "]: htf = "
+                    << htfd_[ip] << "\n"
+                    << std::endl;     
+    }
+}
+
+void Lagrangian::_solve()
 {
     clearParcel();
     this->inject();

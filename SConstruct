@@ -2,9 +2,9 @@ env = Environment()
 
 env['CXX'] = 'g++'
 env.Append(CCFLAGS=['-pthread', '-O3', '-Wno-inline', '-std=c++0x'],
-           CPPPATH=['/usr/include', '/usr/include/eigen3', './src'],
+           CPPPATH=['/opt/cantera/include', './src'],
            LIBS=['cantera', 'sundials_cvodes', 'sundials_ida', 'sundials_nvecserial', 'lapack', 'blas'],
-           LIBPATH=['/usr/lib'],
+           LIBPATH=['/opt/cantera/lib'],
            LINKFLAGS=['-pthread'],
            FRAMEWORKS=[])
 
