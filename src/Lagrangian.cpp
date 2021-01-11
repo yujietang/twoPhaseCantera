@@ -180,7 +180,9 @@ void Lagrangian::solve()
     doublereal _mug = mug[0];
     doublereal _Red;
     //tracking step n:
-    size_t marchingStep = 2e+4;
+    size_t marchingStep = 6e+4;
+
+    // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
     {
         std::cout << "**************** Tracking the parcel [ "
@@ -236,8 +238,8 @@ void Lagrangian::solve()
         std::cout << "relative velocity is :" << std::abs(_ug-up[n-1])*(_ug-up[n-1]) << std::endl;
         std::cout << "The drag force is :" << 0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small) << std::endl;
         up.push_back(
-            // up[n-1] + 0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
-            _ug
+            up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
+            // _ug
         ); 
         
         /******For droplet******/
@@ -265,7 +267,7 @@ void Lagrangian::solve()
             std::cerr << "###### Error: parcel's number is not equal to Np! ######";
         }
 
-        if(dp[n]<small || mp[n]<small)
+        if(dp[n]<small || mp[n]<small || _xp > 0.6)
         {
             break;
         }
@@ -568,6 +570,7 @@ doublereal Lagrangian::mddot(size_t n)
     
     doublereal pc = p0;
     doublereal Tinf = T_[n];
+    doublereal Td = Tp[n];
     doublereal uG = u_[n];
     doublereal muG = mu_[n];
     doublereal rhoG = rho_[n];
@@ -588,22 +591,26 @@ doublereal Lagrangian::mddot(size_t n)
 
     //calculate the surface (vapour film) values:
     doublereal Ts, rhos, mus, Pr, kappas;
-    Ts = (2*Tp[n] + Tinf)/3;
+    Ts = (2*Td + Tinf)/3;
     
     // saturation pressure for species i [pa]
-    psat = pv(Tp[n]);
+    psat = pv(Td);
 
     //vapour diffusivity [m2/s]:
     D = Dab(pc, Ts, 28.0);
+    D = 10.2e-6;
 
     //liquid surface fuel molar fraction:
-    doublereal Xsf = psat/p0;
+    // Clausius-Clapeyron relation:
+    doublereal Tboiling = 351;
+    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
     doublereal Ysf = Xsf*mw[kf];
 
-    // //vapour film fuel molar fraction:
-    // doublereal Xff = (1/3)*Xc[kf] + (2/3)*Xsf;
+    // // Dalton relation:
+    // doublereal Xsf = (psat/p0);
+    // doublereal Ysf = Xsf*mw[kf];
 
-    // doublereal Yff = Xff*mw[kf];
+    /*******************************************************************/
     // //fuel vapor concentration at surface [kmol/m3] at film temperature:
     // Cs = psat/(RR*Ts);
 
@@ -620,21 +627,27 @@ doublereal Lagrangian::mddot(size_t n)
     // doublereal Xs = (2.0*Csf + Xc[kf]*CsTot)/3.0;
     // doublereal Ys = Xs*mw[kf];
 
-    const double sqrtW = sqrt(mw[kf]);
-    const double cbrtW = cbrt(mw[kf]);
+    // const double sqrtW = sqrt(mw[kf]);
+    // const double cbrtW = cbrt(mw[kf]);
 
-    rhos = Xsf*mw[kf];
+    // rhos = Xsf*mw[kf];
 
-    mus = Ysf*sqrtW*muG;
+    // mus = Ysf*sqrtW*muG;
 
-    double sumYiSqrtW = Ysf*sqrtW;
-    double sumYiCbrtW = Ysf*cbrtW;
+    // double sumYiSqrtW = Ysf*sqrtW;
+    // double sumYiCbrtW = Ysf*cbrtW;
 
-    rhos *= p0/(RR*Tinf);
-    rhos = std::max(rhos, small);
+    // rhos *= p0/(RR*Tinf);
+    // rhos = std::max(rhos, small);
 
-    mus /= sumYiSqrtW;
-    mus = std::max(mus, small);
+    // mus /= sumYiSqrtW;
+    // mus = std::max(mus, small);
+    /*******************************************************************/
+
+    const double TRatio = Tinf/Ts; 
+    rhos = rhoG*TRatio;
+
+    mus = muG/TRatio;
 
     //Schmidt number:
     Sc = mus/(rhos*D + small);
@@ -644,6 +657,8 @@ doublereal Lagrangian::mddot(size_t n)
     
     //Ranz-Marshall:
     Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
+    
+    // Xsf = (psat/p0);
 
     doublereal Bm = (Xsf - Xc[kf])/(1 - Xsf);
     /**************************************** Debug ****************************************/
@@ -697,7 +712,9 @@ doublereal Lagrangian::Tddot(size_t n)
     doublereal Ts = (2*Td + Tinf)/3.0;
 
     // saturation pressure for species i [pa]
-    doublereal psat = pv(Td);
+    doublereal psat = pv(Ts);
+
+    /*******************************************************************/
 
     // //vapor concentration at surface [kmol/m3] at film temperature:
     // doublereal Cs = psat/(RR*Ts);
@@ -737,42 +754,47 @@ doublereal Lagrangian::Tddot(size_t n)
     // mus /= sumYiSqrtW;
     // mus = std::max(mus, small);
 
+    /*******************************************************************/
     //liquid surface fuel molar fraction:
-    doublereal Xsf = psat/p0;
-
+    // Clausius-Clapeyron relation:
+    doublereal Tboiling = 351;
+    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
     doublereal Ysf = Xsf*mw[kf];
 
-    // //vapour film fuel molar fraction:
-    // doublereal Xff = (1/3)*Xc[kf] + (2/3)*Xsf;
-
-    // doublereal Yff = Xff*mw[kf];
+    // // Dalton relation:
+    // doublereal Xsf = (psat/p0);
+    // doublereal Ysf = Xsf*mw[kf];
 
     const double sqrtW = sqrt(mw[kf]);
     const double cbrtW = cbrt(mw[kf]);
 
-    doublereal rhos = Xsf*mw[kf];
+    // doublereal rhos = Xsf*mw[kf];
 
-    doublereal mus = Ysf*sqrtW*muG;
+    // doublereal mus = Ysf*sqrtW*muG;
 
     doublereal kappas = Ysf*cbrtW*kG;
 
     doublereal cps = Xsf*cpG;
 
-    double sumYiSqrtW = Ysf*sqrtW;
+    // double sumYiSqrtW = Ysf*sqrtW;
     double sumYiCbrtW = Ysf*cbrtW;
 
     cps = std::max(cps, small);
 
-    rhos *= p0/(RR*Tinf);
-    rhos = std::max(rhos, small);
+    // rhos *= p0/(RR*Tinf);
+    // rhos = std::max(rhos, small);
 
-    mus /= sumYiSqrtW;
-    mus = std::max(mus, small);
+    // mus /= sumYiSqrtW;
+    // mus = std::max(mus, small);
 
-
-    kappas /= sumYiSqrtW;
+    kappas /= sumYiCbrtW;
     kappas = std::max(kappas, small);
 
+    const double TRatio = Tinf/Ts; 
+    doublereal rhos = rhoG*TRatio;
+
+    doublereal mus = muG/TRatio;
+    
     doublereal Pr = cps*mus/kappas;
 
     //mass transfer rate:
@@ -808,7 +830,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("test.csv");
+    std::ofstream fout1("test_Da.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){
