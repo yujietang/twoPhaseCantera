@@ -26,16 +26,16 @@ T = data1[-2]
 
 ax1  = fig.add_subplot(111)
 
-ax1.scatter(time, d, label='$d$',c ='r',s=1)
+ax1.scatter(time, d2/d2[0], label='$d$',c ='r',s=1)
 ax1.set_xlabel(r'$t [s]$',fontsize=fonts1)
-ax1.set_ylabel(r'$d [{\mu}m]$',fontsize=fonts1)
-ax1.set_ylim(14, 25)
+ax1.set_ylabel(r'$d^2/{d_0}^2 (-)$',fontsize=fonts1)
+ax1.set_ylim(0.0, 1.0)
 # ax1.set_xlabel(r'$z$ $(m)$',fontsize=fonts1)
 # ax1.set_ylabel(r'$d$ $({\mu}m)$',fontsize=fonts1)
 
 ax2 = ax1.twinx()
-ax2.scatter(time, Tp, label='Droplet Temperature',c ='b',s=1)
-ax2.set_ylabel(r'$Tp$ $(K)$',fontsize=fonts1)
+ax2.scatter(time, Tp/Tp[0], label='Droplet Temperature',c ='b',s=1)
+ax2.set_ylabel(r'$Tp/Tp_0$ $(-)$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
 plt.xlim(0.0, 0.05)
@@ -44,6 +44,6 @@ plt.tick_params(labelsize=10)
 # handles1, label1 = ax1.get_legend_handles_labels()
 # handles2, label2 = ax2.get_legend_handles_labels()
 ax1.legend(loc='upper left', fontsize=12)
-ax2.legend(loc='upper right', fontsize=12)
+ax2.legend(loc='upper left', fontsize=12)
 
 plt.show()
