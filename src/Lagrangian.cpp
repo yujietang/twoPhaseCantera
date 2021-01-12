@@ -1,4 +1,7 @@
 #include "Lagrangian.h"
+#include "Liquid.h"
+#include "AllSpecies.h"
+
 #include <cmath>
 
 namespace Cantera
@@ -10,6 +13,7 @@ Lagrangian::Lagrangian(
    const doublereal lagrangianTimeStep,
    const size_t dropletNumber
 ) :
+    fuel(pinjection),
     d_inj(parcelDiameter),
     Tp_inj(TInjection),
     Mdotp_inj(0.0),
@@ -39,9 +43,9 @@ void Lagrangian::setupInjection(
     doublereal mdotp
 )
 {
-    doublereal Rhop_inj = rhold(Tp_inj);
+    doublereal Rhop_inj = fuel.rho(Tp_inj);
     doublereal Vd_inj = Pi*std::pow(d, 3.0)/6.0;
-    Md_inj = rhold(Tp)*Vd_inj;
+    Md_inj = fuel.rho(Tp)*Vd_inj;
     Mdotp_inj = Nd*Md_inj/dtlag;
 }
 
@@ -180,7 +184,7 @@ void Lagrangian::solve()
     doublereal _mug = mug[0];
     doublereal _Red;
     //tracking step n:
-    size_t marchingStep = 6e+4;
+    size_t marchingStep = 15000;
 
     // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
@@ -208,7 +212,7 @@ void Lagrangian::solve()
 
         //parcel's density
         rhop.push_back(
-            rhold(Tp[n])
+            fuel.rho(Tp[n])
         ); 
 
         //parcel's diameter 
@@ -337,7 +341,7 @@ void Lagrangian::inject()
     Tp.push_back(Tp_inj);
     up.push_back(ug[0]);
     dp.push_back(d_inj);
-    rhop.push_back(rhold(Tp_inj));
+    rhop.push_back(fuel.rho(Tp_inj));
 
     mtfd_.push_back(0.0);
     htfp_.push_back(0.0);
@@ -456,6 +460,102 @@ void Lagrangian::setMpdot(doublereal mdot)
     Mdotp_inj = mdot;
 }
 
+doublereal Lagrangian::mddot(size_t n)
+{
+    const size_t kf = 30;
+    const doublereal MWf = mw[kf];//TODO:only for ethanol
+    //all parameters needed:
+    doublereal Ni;
+    doublereal kc;
+    doublereal Cs;
+    doublereal Cinf;
+    doublereal psat;
+    doublereal Sh;
+    doublereal Red;
+    doublereal Sc;
+    doublereal rp;
+    doublereal Dab;
+    
+    doublereal pc = p0;
+    doublereal Tinf = T_[n];
+    doublereal uG = u_[n];
+    doublereal muG = mu_[n];
+    doublereal rhoG = rho_[n];
+    vector_fp Yc(Y_.size(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Yc[k] = Y_[k][n];
+    }
+
+    //calculate the surface (vapour film) values:
+    doublereal Ts, rhos, mus, Pr, kappas;
+    Ts = (2*Tp[n] + Tinf)/3;
+    
+    const doublereal TRatio = Tinf/Ts;
+    rhos = rhoG*TRatio;
+    mus = muG/TRatio;
+
+    // saturation pressure for species i [pa]
+    psat = fuel.pv(Tp[n]);
+
+    //vapour diffusivity [m2/s]:
+    Dab = fuel.D(Ts);
+ 
+    //Schmidt number:
+    Sc = mus/(rhos*Dab + small);
+
+    //droplet Reynold's number:
+    Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
+    
+    //Ranz-Marshall:
+    Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
+
+    //species volume fraction in the carrier gas:
+    //the fuel index is k = 30:
+    vector_fp Xc_(Yc.size(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Xc_[k] = Yc[k]/mw[k];
+    }
+    double Xc = 0;
+    for(size_t k=0; k<Xc_.size(); ++k){
+        Xc += Xc_[k];
+    }
+    Xc = Xc_[kf]/Xc;
+
+    //vapor concentration at surface [kmol/m3] at film temperature:
+    Cs = psat/(RR*Ts);
+
+    //vapor concentration in bulk gas [kmol/m3] at film temperature:
+    Cinf = Xc*pc/(RR*Ts);
+
+    //mass transfer coefficient [m/s]:
+    kc = Sh*Dab/(dp[n] + small);
+
+    //molar flux of vapour [kmol/m2/s]:
+    Ni = std::max(kc*(Cs - Cinf), 0.0);
+    
+    /**************************************** Debug ****************************************/
+    // std::cout << "\nvapor pressure pv = " << psat << std::endl;
+    // std::cout << "vapor diffusivity Dab = " << D << "\n" << std::endl;
+
+    // std::cout << "species volume fraction in the carrier phase Xc = " << Xc << std::endl;
+    // std::cout << "vapor concentration at surface Cs = " << Cs << std::endl;
+    // std::cout << "vapor concentration in the bulk gas Cinf = " << Cinf << "\n" << std::endl;
+
+    // std::cout << "mass transfer coeff. kc = " << kc << std::endl;
+    // std::cout << "molar flux of vapor Ni = " << Ni << "\n" << std::endl;
+ 
+    // std::cout << "Sc = " << Sc << std::endl;
+    // std::cout << "Red = " << Red << std::endl;
+    // std::cout << "Sh = " << Sh << std::endl;
+    /**************************************** Debug ****************************************/
+
+    //Return the mass transfer [kg/s]:
+    doublereal massTranfRate = -Pi*Ni*dp[n]*dp[n]*MWf;
+    
+
+    return massTranfRate;
+}
+
 // doublereal Lagrangian::mddot(size_t n)
 // {
 //     const size_t kf = 30;
@@ -474,209 +574,111 @@ void Lagrangian::setMpdot(doublereal mdot)
     
 //     doublereal pc = p0;
 //     doublereal Tinf = T_[n];
+//     doublereal Td = Tp[n];
 //     doublereal uG = u_[n];
 //     doublereal muG = mu_[n];
 //     doublereal rhoG = rho_[n];
 //     vector_fp Yc(Y_.size(), 0.0);
+//     vector_fp YkMW(Y_.size(), 0.0);
+//     vector_fp Xc(Yc.size(), 0.0);
 //     for(size_t k=0; k<Yc.size(); ++k){
 //         Yc[k] = Y_[k][n];
+//         YkMW[k] = Yc[k]/mw[k];
+//     }
+//     double sumYkMW = std::accumulate(YkMW.begin(), YkMW.end(), 0.0);
+//     for(size_t k=0; k<Yc.size(); ++k){
+//         Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
+//     }
+//     for(size_t k=0; k<Xc.size(); ++k){
+//         Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
 //     }
 
 //     //calculate the surface (vapour film) values:
 //     doublereal Ts, rhos, mus, Pr, kappas;
-//     Ts = (2*Tp[n] + Tinf)/3;
+//     Ts = (2*Td + Tinf)/3;
     
-//     const doublereal TRatio = Tinf/Ts;
-//     rhos = rhoG*TRatio;
-//     mus = muG/TRatio;
-
 //     // saturation pressure for species i [pa]
-//     psat = pv(Tinf);
+//     psat = fuel.pv(Td);
 
 //     //vapour diffusivity [m2/s]:
-//     D = Dab(pc, Ts, 28.0);
- 
+//     // doublereal Dab = fuel.D(Ts);
+//     doublereal Dab = 10.2e-6;
+
+//     //liquid surface fuel molar fraction:
+//     // Clausius-Clapeyron relation:
+//     doublereal Tboiling = fuel.Tb();
+//     doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+//     doublereal Ysf = Xsf*mw[kf];
+
+//     // // Dalton relation:
+//     // doublereal Xsf = (psat/p0);
+//     // doublereal Ysf = Xsf*mw[kf];
+
+//     /*******************************************************************/
+//     // //fuel vapor concentration at surface [kmol/m3] at film temperature:
+//     // Cs = psat/(RR*Ts);
+
+//     // //molar fraction of far field species at particle surface:
+//     // const doublereal Xsff = 1.0 - std::min(Cs*RR*Ts/p0, 1.0);
+
+//     // //surface carrier total molar concentration:
+//     // const doublereal CsTot = p0/(RR*Ts);
+
+//     // //molar concentration of species at particle surface:
+//     // doublereal Csf = Cs + Xsff*Xc[kf]*CsTot;
+
+//     // //single component surface carrier composition (molar fraction):
+//     // doublereal Xs = (2.0*Csf + Xc[kf]*CsTot)/3.0;
+//     // doublereal Ys = Xs*mw[kf];
+
+//     // const double sqrtW = sqrt(mw[kf]);
+//     // const double cbrtW = cbrt(mw[kf]);
+
+//     // rhos = Xsf*mw[kf];
+
+//     // mus = Ysf*sqrtW*muG;
+
+//     // double sumYiSqrtW = Ysf*sqrtW;
+//     // double sumYiCbrtW = Ysf*cbrtW;
+
+//     // rhos *= p0/(RR*Tinf);
+//     // rhos = std::max(rhos, small);
+
+//     // mus /= sumYiSqrtW;
+//     // mus = std::max(mus, small);
+//     /*******************************************************************/
+
+//     const double TRatio = Tinf/Ts; 
+//     rhos = rhoG*TRatio;
+
+//     mus = muG/TRatio;
+
 //     //Schmidt number:
-//     Sc = mus/(rhos*D + small);
+//     Sc = mus/(rhos*Dab + small);
 
 //     //droplet Reynold's number:
 //     Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
     
 //     //Ranz-Marshall:
 //     Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
-
-//     //species volume fraction in the carrier gas:
-//     //the fuel index is k = 30:
-//     vector_fp Xc_(Yc.size(), 0.0);
-//     for(size_t k=0; k<Yc.size(); ++k){
-//         Xc_[k] = Yc[k]/mw[k];
-//     }
-//     double Xc = 0;
-//     for(size_t k=0; k<Xc_.size(); ++k){
-//         Xc += Xc_[k];
-//     }
-//     Xc = Xc_[kf]/Xc;
-
-//     //vapor concentration at surface [kmol/m3] at film temperature:
-//     Cs = psat/(RR*Ts);
-
-//     //vapor concentration in bulk gas [kmol/m3] at film temperature:
-//     Cinf = Xc*pc/(RR*Ts);
-
-//     //mass transfer coefficient [m/s]:
-//     kc = Sh*D/(dp[n] + small);
-
-//     //molar flux of vapour [kmol/m2/s]:
-//     Ni = std::max(kc*(Cs - Cinf), 0.0);
     
+//     // Xsf = (psat/p0);
+
+//     doublereal Bm = (Xsf - Xc[kf])/(1 - Xsf);
 //     /**************************************** Debug ****************************************/
-//     std::cout << "\nvapor pressure pv = " << psat << std::endl;
-//     std::cout << "vapor diffusivity Dab = " << D << "\n" << std::endl;
-
-//     std::cout << "species volume fraction in the carrier phase Xc = " << Xc << std::endl;
-//     std::cout << "vapor concentration at surface Cs = " << Cs << std::endl;
-//     std::cout << "vapor concentration in the bulk gas Cinf = " << Cinf << "\n" << std::endl;
-
-//     std::cout << "mass transfer coeff. kc = " << kc << std::endl;
-//     std::cout << "molar flux of vapor Ni = " << Ni << "\n" << std::endl;
- 
-//     std::cout << "Sc = " << Sc << std::endl;
-//     std::cout << "Red = " << Red << std::endl;
-//     std::cout << "Sh = " << Sh << std::endl;
+//     // std::cout << "Xc = " << Xc[kf] << std::endl;
+//     // std::cout << "pv = " << psat << std::endl;
+//     // std::cout << "Dab = " << D << "\n" << std::endl;
+//     // std::cout << "rhoG = " << rhoG << "\n" << std::endl;
+//     // std::cout << "Xsf = " << Xsf << std::endl;
+//     // std::cout << "Sh = " << Sh << std::endl;
 //     /**************************************** Debug ****************************************/
-
+    
 //     //Return the mass transfer [kg/s]:
-//     doublereal massTranfRate = -Pi*Ni*dp[n]*dp[n]*MWf;
-    
+//     doublereal massTranfRate = -Pi*dp[n]*Sh*Dab*rhoG*log(1 + Bm);
 
 //     return massTranfRate;
 // }
-
-doublereal Lagrangian::mddot(size_t n)
-{
-    const size_t kf = 30;
-    const doublereal MWf = mw[kf];//TODO:only for ethanol
-    //all parameters needed:
-    doublereal Ni;
-    doublereal kc;
-    doublereal Cs;
-    doublereal Cinf;
-    doublereal psat;
-    doublereal Sh;
-    doublereal Red;
-    doublereal Sc;
-    doublereal rp;
-    doublereal D;
-    
-    doublereal pc = p0;
-    doublereal Tinf = T_[n];
-    doublereal Td = Tp[n];
-    doublereal uG = u_[n];
-    doublereal muG = mu_[n];
-    doublereal rhoG = rho_[n];
-    vector_fp Yc(Y_.size(), 0.0);
-    vector_fp YkMW(Y_.size(), 0.0);
-    vector_fp Xc(Yc.size(), 0.0);
-    for(size_t k=0; k<Yc.size(); ++k){
-        Yc[k] = Y_[k][n];
-        YkMW[k] = Yc[k]/mw[k];
-    }
-    double sumYkMW = std::accumulate(YkMW.begin(), YkMW.end(), 0.0);
-    for(size_t k=0; k<Yc.size(); ++k){
-        Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
-    }
-    for(size_t k=0; k<Xc.size(); ++k){
-        Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
-    }
-
-    //calculate the surface (vapour film) values:
-    doublereal Ts, rhos, mus, Pr, kappas;
-    Ts = (2*Td + Tinf)/3;
-    
-    // saturation pressure for species i [pa]
-    psat = pv(Td);
-
-    //vapour diffusivity [m2/s]:
-    D = Dab(pc, Ts, 28.0);
-    D = 10.2e-6;
-
-    //liquid surface fuel molar fraction:
-    // Clausius-Clapeyron relation:
-    doublereal Tboiling = 351;
-    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
-    doublereal Ysf = Xsf*mw[kf];
-
-    // // Dalton relation:
-    // doublereal Xsf = (psat/p0);
-    // doublereal Ysf = Xsf*mw[kf];
-
-    /*******************************************************************/
-    // //fuel vapor concentration at surface [kmol/m3] at film temperature:
-    // Cs = psat/(RR*Ts);
-
-    // //molar fraction of far field species at particle surface:
-    // const doublereal Xsff = 1.0 - std::min(Cs*RR*Ts/p0, 1.0);
-
-    // //surface carrier total molar concentration:
-    // const doublereal CsTot = p0/(RR*Ts);
-
-    // //molar concentration of species at particle surface:
-    // doublereal Csf = Cs + Xsff*Xc[kf]*CsTot;
-
-    // //single component surface carrier composition (molar fraction):
-    // doublereal Xs = (2.0*Csf + Xc[kf]*CsTot)/3.0;
-    // doublereal Ys = Xs*mw[kf];
-
-    // const double sqrtW = sqrt(mw[kf]);
-    // const double cbrtW = cbrt(mw[kf]);
-
-    // rhos = Xsf*mw[kf];
-
-    // mus = Ysf*sqrtW*muG;
-
-    // double sumYiSqrtW = Ysf*sqrtW;
-    // double sumYiCbrtW = Ysf*cbrtW;
-
-    // rhos *= p0/(RR*Tinf);
-    // rhos = std::max(rhos, small);
-
-    // mus /= sumYiSqrtW;
-    // mus = std::max(mus, small);
-    /*******************************************************************/
-
-    const double TRatio = Tinf/Ts; 
-    rhos = rhoG*TRatio;
-
-    mus = muG/TRatio;
-
-    //Schmidt number:
-    Sc = mus/(rhos*D + small);
-
-    //droplet Reynold's number:
-    Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
-    
-    //Ranz-Marshall:
-    Sh = 2 + 0.522*pow(Red, 2.0)*pow(Sc, 0.33333);
-    
-    // Xsf = (psat/p0);
-
-    doublereal Bm = (Xsf - Xc[kf])/(1 - Xsf);
-    /**************************************** Debug ****************************************/
-
-    // std::cout << "fuel molar fraction #### Xc = " << Xc[kf] << std::endl;
-    // std::cout << "\nvapor pressure pv = " << psat << std::endl;
-    // std::cout << "vapor diffusivity Dab = " << D << "\n" << std::endl;
-    // std::cout << "gas phase density rhoG = " << rhoG << "\n" << std::endl;
-    // std::cout << "vapor concentration at surface Cs = " << Cs << std::endl;
- 
-    // std::cout << "Sh = " << Sh << std::endl;
-    /**************************************** Debug ****************************************/
-    
-    //Return the mass transfer [kg/s]:
-    doublereal massTranfRate = -Pi*dp[n]*Sh*D*rhoG*log(1 + Bm);
-
-    return massTranfRate;
-}
 
 doublereal Lagrangian::Tddot(size_t n)
 {
@@ -710,9 +712,9 @@ doublereal Lagrangian::Tddot(size_t n)
 
     //surface temperature:
     doublereal Ts = (2*Td + Tinf)/3.0;
-
+    const double TRatio = Tinf/Ts; 
     // saturation pressure for species i [pa]
-    doublereal psat = pv(Ts);
+    doublereal psat = fuel.pv(Ts);
 
     /*******************************************************************/
 
@@ -757,7 +759,7 @@ doublereal Lagrangian::Tddot(size_t n)
     /*******************************************************************/
     //liquid surface fuel molar fraction:
     // Clausius-Clapeyron relation:
-    doublereal Tboiling = 351;
+    doublereal Tboiling = fuel.Tb();
     doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
     doublereal Ysf = Xsf*mw[kf];
 
@@ -779,6 +781,7 @@ doublereal Lagrangian::Tddot(size_t n)
     // double sumYiSqrtW = Ysf*sqrtW;
     double sumYiCbrtW = Ysf*cbrtW;
 
+    // cps = 1602;
     cps = std::max(cps, small);
 
     // rhos *= p0/(RR*Tinf);
@@ -788,9 +791,9 @@ doublereal Lagrangian::Tddot(size_t n)
     // mus = std::max(mus, small);
 
     kappas /= sumYiCbrtW;
+    kappas *= TRatio;
     kappas = std::max(kappas, small);
 
-    const double TRatio = Tinf/Ts; 
     doublereal rhos = rhoG*TRatio;
 
     doublereal mus = muG/TRatio;
@@ -804,25 +807,23 @@ doublereal Lagrangian::Tddot(size_t n)
     
     doublereal Nu = 2.0 + 0.6*std::pow(Red, 0.5)*std::pow(Pr, 0.33333);
 
-    doublereal tddot = (mddot_/(md*cld(Td)))*Lv(Td) + (Pi*dp[n]*Nu*kappas/(md*cld(Td)))*(Tinf-Td);
+    doublereal tddot = (mddot_/(md*fuel.cp(Td)))*fuel.Lv(Td) + (Pi*dp[n]*Nu*kappas/(md*fuel.cp(Td)))*(Tinf-Td);
 
     /**************************************** Debug ****************************************/
-    // std::cout << "fuel molar weight MWf = " << mw[kf] << std::endl;
-    // std::cout << "suface species mole fraction Xs = " << Xs << std::endl;
-    // std::cout << "suface Temperature Ts = " << Ts << std::endl;
-    // std::cout << "suface vapor density rhos = " << rhos << std::endl;
-    // std::cout << "suface vapor heat capacity cps = " << cps << std::endl;
-    // std::cout << "suface vapor dynamic viscosity mus = " << mus << std::endl;
-    // std::cout << "suface vapor heat conductivity kappas = " << kappas << std::endl;
-    // std::cout << "Nussult Number Nu = " << Nu << "\n" << std::endl;
+    // std::cout << "Ts = " << Ts << std::endl;
+    // std::cout << "rhos = " << rhos << std::endl;
+    // std::cout << "cps = " << cps << std::endl;
+    // std::cout << "mus = " << mus << std::endl;
+    // std::cout << "kappas = " << kappas << std::endl;
+    // std::cout << "Nu = " << Nu << "\n" << std::endl;
 
-    // std::cout << "liquid heat capacity cld = " << cld(Td) << std::endl;
-    // std::cout << "liquid Latent heat Lv = " << Lv(Td) << std::endl;
-    // std::cout << "liquid Temperature Td = " << Td << "\n" << std::endl;
+    // std::cout << "cld = " << cld(Td) << std::endl;
+    // std::cout << "Lv = " << Lv(Td) << std::endl;
+    // std::cout << "Td = " << Td << "\n" << std::endl;
     
     // std::cout << "mass transfer rate = " << mddot_ << std::endl;
     // std::cout << "The 1st term of tdot = " << (mddot_/(md*cld(Td)))*Lv(Td) << std::endl;
-    // std::cout << "The 2nd term of tdot = " << (Pi*dp[n]*Nu*kappas/(md*cld(Td)))*(TG-Td) << "\n" << std::endl;
+    // std::cout << "The 2nd term of tdot = " << (Pi*dp[n]*Nu*kappas/(md*cld(Td)))*(Tinf-Td) << "\n" << std::endl;
     /**************************************** Debug ****************************************/
     return tddot;
 }
@@ -830,7 +831,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("test_FreeFlame.csv");
+    std::ofstream fout1("OpenFoam.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){
