@@ -238,8 +238,8 @@ void Lagrangian::solve()
         std::cout << "relative velocity is :" << std::abs(_ug-up[n-1])*(_ug-up[n-1]) << std::endl;
         std::cout << "The drag force is :" << 0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small) << std::endl;
         up.push_back(
-            up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
-            // _ug
+            // up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
+            _ug
         ); 
         
         /******For droplet******/
@@ -830,7 +830,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("test_Da.csv");
+    std::ofstream fout1("test_FreeFlame.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

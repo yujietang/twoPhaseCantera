@@ -19,7 +19,7 @@ int main()
     size_t dropletNumber(1);
 
     //determine the lagrangian evaporation time scale:
-    doublereal dtlag(1e-5);
+    doublereal dtlag(1e-6);
 
     //for single component of ethanol fuel:
     doublereal C_atoms = 2.0; // C2H5OH
@@ -40,13 +40,17 @@ int main()
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
     doublereal fa_stoic = 1.0 / (4.76 * ax); // fuel / air ratio at stoic state
+    
+    // // when the condition is fuel/oxidizer flow:
     x[gas.speciesIndex("C2H5OH")] = 1.0;
     x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic;
     x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic;
     x[gas.speciesIndex("AR")] = 0.01 / phi / fa_stoic;
+    // // when the condition is pure air flow:
     // x[gas.speciesIndex("O2")] = 0.21;
     // x[gas.speciesIndex("N2")] = 0.78;
     // x[gas.speciesIndex("AR")] = 0.01;
+    
     gas.setState_TPX(temp, pressure, x.data());
     // gas.setState_TP(temp, pressure);
 
