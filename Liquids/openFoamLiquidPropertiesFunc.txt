@@ -1,0 +1,82 @@
+        /*****Some Liquid Property Functions in OpenFoam*****/
+	// //specific liquid heat capacity:
+        // doublereal cld(doublereal Tp) const
+        // {   
+        //     return ((((0.0*Tp + 0.0)*Tp + 5.20523562482363e-5)*Tp 
+        //             + 0.00714146172046278)*Tp -1.21990926653498)*Tp +  2052.57332;
+        // }
+
+        // //liquid density:
+        // doublereal rhold(doublereal Tp) const
+        // {   
+        //     return 70.1308387/std::pow(0.26395, 1 
+        //             + std::pow(1 - Tp/516.25, 0.2367));
+        // }
+        // //liquid vapour dynamic viscousity:
+        // // doublereal muv(doublereal Tp)
+
+        // //latent heat:
+        // doublereal Lv(doublereal Tp) const
+        // {
+        //     doublereal Tr = Tp/516.25;
+        //     return  958345.091059064*std::pow(1 - Tr, ((0.0*Tr + 0.0)*Tr + 0.75362)*Tr - 0.4134);
+        // }
+
+        // //@ pc: carrier phase pressure
+        // //@ Tv: vapor(surface) temperature
+        // //binary diffusivity derived by API Function:
+        // doublereal Dab(doublereal pc, doublereal Tv, doublereal Wa)
+        // {
+        //     const doublereal beta = std::pow((cbrt(147.18)+cbrt(20.1)), 2.0);
+        //     const doublereal alphaBinary = sqrt(1.0/46.069 + 1.0/Wa);
+        //     return (3.6059e-3)*(std::pow(1.8*Tv, 1.75))*alphaBinary/(pc*beta+small);
+        // }
+
+        // //vapor pressure
+        // doublereal pv(doublereal Tv) const
+        // {
+        //     return exp(59.796 - 6595/Tv - 5.0474*log(Tv) + 6.3e-7*pow(Tv, 2.0));
+        // }
+
+        // //vapour heat capacity:
+        // doublereal cpv(doublereal Tv)
+        // {
+        //     doublereal a1, a2, a3, a4, a5, a6, a7; 
+        //     if(Tv >= 300 && Tv <= 1000){
+        //         a1 = 4.34717120;
+        //         a2 = 1.86288e-2;
+        //         a3 = -6.779467e-6;
+        //         a4 = 8.16592600e-10;
+        //         a5 = 0.0;
+        //         a6 = -3.06615743e+4;
+        //         a7 = 3.24247304;
+        //         return a1*std::pow(Tv, -2.0) 
+        //                 + a2*std::pow(Tv, -1.0) 
+        //                 + a3 
+        //                 + a4*Tv
+        //                 + a5*std::pow(Tv, 2.0)
+        //                 + a6*std::pow(Tv, 3.0)
+        //                 + a7*std::pow(Tv, 4.0);
+        //     }
+        //     else if(Tv >1000 && Tv < 5000){
+        //         a1 = 5.765358e-1;
+        //         a2 = 2.894512e-2;
+        //         a3 = -1.61001e-5;
+        //         a4 = 3.591641e-9;
+        //         a5 = 0.0;
+        //         a6 = -2.963595e+4;
+        //         a7 = 2.270813e+1;
+        //         return a1*std::pow(Tv, -2.0) 
+        //                 + a2*std::pow(Tv, -1.0) 
+        //                 + a3 
+        //                 + a4*Tv
+        //                 + a5*std::pow(Tv, 2.0)
+        //                 + a6*std::pow(Tv, 3.0)
+        //                 + a7*std::pow(Tv, 4.0);            
+        //     }
+        //     else
+        //     {
+        //         std::cerr << "Temperature range overflow!\n";
+        //     }
+            
+        // }
