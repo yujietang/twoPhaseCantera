@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-filename0 = './Basic.csv'
-filename1 = './OpenFoam.csv'
+filename0 = './FreeFlame.csv'
+filename1 = './FreeFlamewithDrag.csv'
 # filename1 = './LPT1.csv'
 fonts1 = 18
 fonts2 = 25
@@ -42,9 +42,9 @@ value2 = [0.95922, 0.90478, 0.85438, 0.80221, 0.76189, 0.71149, 0.65705, 0.60489
 
 ax1  = fig.add_subplot(111)
 
-ax1.scatter(time, d2/d2[0], label='$Theoretical$ $solution$',c ='r',s=15)
-ax1.scatter(time_, d2_/d2_[0], label='$Gradient$ $diffusion$ $model$',c ='g', marker = '^', s=5)
-ax1.scatter(time2, value2, label='$OpenFOAM$ $solution$', c = 'k', marker = '+', s=50)
+ax1.scatter(time, d2/d2[0], label='$no$ $Drag$',c ='r',s=20)
+ax1.scatter(time_, d2_/d2_[0], label='$Yuen$ $&$ $Chen$ $(1976)$',c ='g', marker = '^', s=10)
+# ax1.scatter(time2, value2, label='$OpenFOAM$ $solution$', c = 'k', marker = '+', s=50)
 ax1.set_xlabel(r'$t$ $(s)$',fontsize=fonts1)
 ax1.set_ylabel(r'$d^2/{d_0}^2$ $(-)$',fontsize=fonts1)
 ax1.set_ylim(0.0, 1.0)
@@ -56,12 +56,12 @@ ax2.scatter(time, Tp/Tp[0], label='Droplet Temperature',c ='b',s=5)
 ax2.set_ylabel(r'$Tp/Tp_0$ $(-)$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
-plt.xlim(0.0, 0.05)
+plt.xlim(0.1425, 0.1445)
 plt.tick_params(labelsize=10)
 
 # handles1, label1 = ax1.get_legend_handles_labels()
 # handles2, label2 = ax2.get_legend_handles_labels()
 ax1.legend(loc='lower left', fontsize=15)
-ax2.legend(loc='upper right', fontsize=12)
+ax2.legend(loc='lower right', fontsize=12)
 
 plt.show()

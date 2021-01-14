@@ -191,7 +191,9 @@ void Lagrangian::solve()
     {
         std::cout << "**************** Tracking the parcel [ "
                     << n << " ] ****************\n" << std::endl;
+        
         _xp += up[n-1]*dtlag;
+
         //parcel's position:
         xp.push_back(_xp);
         std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
@@ -200,13 +202,11 @@ void Lagrangian::solve()
 
         //parcel's mass:
         mp.push_back(
-            // mp[n-1]
             mp[n-1] + Nd*dtlag*mddot(n-1)
         );
 
         //parcel's temperature:
         Tp.push_back(
-            // Tp[n-1]
             Tp[n-1] + Nd*dtlag*Tddot(n-1)
         );
 
@@ -223,10 +223,6 @@ void Lagrangian::solve()
         //parcel's velocity
         //Yuan & Chen (1976):
         _ug = intpfield(ug, z, xp[n-1]);
-        std::cout << "LOCAL GAS VELOCITY AT x_p = " 
-                << xp[n-1] 
-                << " = "
-                << _ug << "\n"<< std::endl;
         std::cout << "LOCAL Parcel VELOCITY AT x_p = " 
                 << xp[n-1] 
                 << " = "
@@ -239,11 +235,9 @@ void Lagrangian::solve()
         }
         std::cout << "Re_d is :" << _Red << "\n" << std::endl;
         std::cout << "Drag coeff. is : " << Cd(_Red) << "\n" << std::endl;
-        std::cout << "relative velocity is :" << std::abs(_ug-up[n-1])*(_ug-up[n-1]) << std::endl;
-        std::cout << "The drag force is :" << 0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small) << std::endl;
         up.push_back(
-            // up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
-            _ug
+            up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
+            // _ug //no drag force
         ); 
         
         /******For droplet******/
@@ -398,7 +392,6 @@ doublereal Lagrangian::intpfield(
     doublereal xp
 ) const
 {
-    // std::cout << "**********************" << std::endl;
     if(xp < gas->zmin()){
         std::cerr << "ERROR: Parcel does not reach the inlet!" << std::endl;
     }
@@ -684,7 +677,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("FreeFlame.csv");
+    std::ofstream fout1("FreeFlamewithDrag.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){
