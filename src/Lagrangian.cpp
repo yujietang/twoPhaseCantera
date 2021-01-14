@@ -184,7 +184,7 @@ void Lagrangian::solve()
     doublereal _mug = mug[0];
     doublereal _Red;
     //tracking step n:
-    size_t marchingStep = 15000;
+    size_t marchingStep = 16000;
 
     // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
@@ -555,7 +555,7 @@ doublereal Lagrangian::mddot(size_t n)
 
     return massTranfRate;
 }
-
+/***********************Theoretical model of droplet evaporation************************/
 // doublereal Lagrangian::mddot(size_t n)
 // {
 //     const size_t kf = 30;
@@ -831,7 +831,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("OpenFoam.csv");
+    std::ofstream fout1("FreeFlame.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

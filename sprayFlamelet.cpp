@@ -13,13 +13,13 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(25e-6); // m
+    doublereal parcelDiameter(50e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
     size_t dropletNumber(1);
 
     //determine the lagrangian evaporation time scale:
-    doublereal dtlag(5e-5);
+    doublereal dtlag(1e-5);
     // doublereal dtlag(5e-5);
 
     //for single component of ethanol fuel:
@@ -32,7 +32,7 @@ int main()
     /********************Set Gas Flow********************/
     IdealGasMix gas("Ethanol_31.cti", "gas");
 
-    doublereal temp = 320.0; // K
+    doublereal temp = 300.0; // K
     doublereal pressure = 1.0*OneAtm; //atm
     doublereal uin = 0.1; //m/sec
     doublereal phi = 1.0; //equivalence ratio
@@ -43,14 +43,15 @@ int main()
     doublereal fa_stoic = 1.0 / (4.76 * ax); // fuel / air ratio at stoic state
     
     // when the condition is fuel/oxidizer flow:
-    // x[gas.speciesIndex("C2H5OH")] = 1.0;
-    // x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic;
-    // x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic;
-    // x[gas.speciesIndex("AR")] = 0.01 / phi / fa_stoic;
+    x[gas.speciesIndex("C2H5OH")] = 1.0;
+    x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic;
+    x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic;
+    x[gas.speciesIndex("AR")] = 0.01 / phi / fa_stoic;
+
     // when the condition is pure air flow:
-    x[gas.speciesIndex("O2")] = 0.21;
-    x[gas.speciesIndex("N2")] = 0.78;
-    x[gas.speciesIndex("AR")] = 0.01;
+    // x[gas.speciesIndex("O2")] = 0.21;
+    // x[gas.speciesIndex("N2")] = 0.78;
+    // x[gas.speciesIndex("AR")] = 0.01;
     
     gas.setState_TPX(temp, pressure, x.data());
     // gas.setState_TP(temp, pressure);
@@ -90,7 +91,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 40;//initial grid point number
+    int nz = 800;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector
@@ -168,29 +169,32 @@ int main()
             flameSpeed_mix);
     const vector_fp& solution = sprayflame.solutionVector();
 
-    vector_fp zvec,Tvec,COvec,CO2vec,Fuelvec,Uvec;
+    vector_fp zvec,Tvec,COvec,CO2vec,O2vec,N2vec,ARvec,C2H5OHvec,Uvec;
 
     print("\n{:9s}\t{:8s}\t{:5s}\t{:7s}\n",
             "z (m)", "T (K)", "U (m/s)", "Y(CO)");
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         Tvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("T"),n));
+        C2H5OHvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("C2H5OH"),n));
+        O2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("O2"),n));
+        N2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("N2"),n));
+        ARvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("AR"),n));
         COvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO"),n));
         CO2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO2"),n));
-        Fuelvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO2"),n));
         Uvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("u"),n));
         zvec.push_back(gasflow.grid(n));
-        print("{:9.6f}\t{:8.3f}\t{:5.3f}\t{:7.5f}\n",
-                gasflow.grid(n), Tvec[n], Uvec[n], COvec[n]);
+        print("{:9.6f}\t{:8.3f}\t{:5.3f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\n",
+                gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n]);
     }
 
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
     std::ofstream outfile("flamespeed.csv", std::ios::trunc);
-    outfile << "  Grid,   Temperature,   Uvec,   CO,    CO2,   fuel\n";
+    outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
-        print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
-                gasflow.grid(n), Tvec[n], Uvec[n], COvec[n], CO2vec[n], Fuelvec[n]);
+        print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
+                gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n], CO2vec[n]);
     }
     /***************************************LPT*************************************/
     //check the solution vector:
