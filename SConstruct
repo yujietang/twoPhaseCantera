@@ -8,5 +8,5 @@ env.Append(CCFLAGS=['-pthread', '-O3', '-Wno-inline', '-std=c++0x'],
            LINKFLAGS=['-pthread'],
            FRAMEWORKS=[])
 
-program = env.Program('./sprayFlamelet', ['./sprayFlamelet.cpp', './src/Lagrangian.cpp', './src/SprayStFlow.cpp', './src/Sim1D.cpp', './src/OneDim.cpp','./src/boundaries1D.cpp', './Liquids/Ethanol.cpp'])
+program = env.Program('./sprayFlamelet2way', ['./sprayFlamelet2way.cpp', './src/Lagrangian.cpp', './src/SprayStFlow.cpp', './src/Sim1D.cpp', './src/OneDim.cpp','./src/boundaries1D.cpp', './Liquids/Ethanol.cpp'])
 Default(program)
