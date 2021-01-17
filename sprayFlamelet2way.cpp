@@ -13,7 +13,7 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(50e-6); // m
+    doublereal parcelDiameter(25e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
     size_t dropletNumber(1);
@@ -91,7 +91,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 800;//initial grid point number
+    int nz = 50;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector

@@ -68,9 +68,9 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
         if(i%Nvar==0){
             ug.push_back(solution[i]);
         }
-        else if(i%Nvar==1){
-            vg.push_back(solution[i]);
-        }
+        // else if(i%Nvar==1){
+        //     vg.push_back(solution[i]);
+        // }
         else if(i%Nvar==2){
             Tg.push_back(solution[i]);
         }
@@ -89,6 +89,9 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
             // }
         }
     }
+
+    evalRsd(solution);
+
     /******mass and heat transfer******/
     mtf_.resize(z.size(), 0.0);
     htf_.resize(z.size(), 0.0);
@@ -419,19 +422,19 @@ doublereal Lagrangian::intpfield(
 
 bool Lagrangian::evalRsd(const vector_fp& solution)
 {   
+    std::cout << "\nCheck the Langrangian-Eulerian Coupled residual ...\n" << std::endl;
     doublereal rsd = 1.0;
     doublereal Phi0 = 0.0;
     doublereal Phi1 = 1.0;
 
-    Told = Tg;
     for(size_t i = 0; i < solution.size(); ++i){
         if(i%(gas->nsp()+c_offset_Y)==2){
             Tnew.push_back(solution[i]);
         }    
     }
-
+    
     for(size_t ii=0; ii<Told.size(); ++ii){
-        Phi0 += sqrt(Told[ii]*Told[ii]);
+        Phi0 += sqrt(Tg[ii]*Tg[ii]);
     }
     for(size_t jj=0; jj<Tnew.size(); ++jj){
         Phi1 += sqrt(Tnew[jj]*Tnew[jj]);
@@ -439,8 +442,9 @@ bool Lagrangian::evalRsd(const vector_fp& solution)
 
     /*****evaluate the residual*****/
     rsd = (Phi1 -Phi0)/Phi0;
-
+    std::cout << "The coupled RSD = " << Phi0 << std::endl;
     if(rsd < 1.0e-4){
+        std::cout << "\nResidual Checking has been done!\n" << std::endl;
         return true;
     }
     else{
@@ -677,7 +681,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("FreeFlamewithDrag.csv");
+    std::ofstream fout1("./result/FreeFlamewithDrag.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

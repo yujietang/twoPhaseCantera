@@ -3,7 +3,7 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at http://www.cantera.org/license.txt for license and copyright information.
 
-#include "SprayStFlow.h"
+#include "cantera/oneD/StFlow.h"
 #include "cantera/base/ctml.h"
 #include "cantera/transport/TransportBase.h"
 #include "cantera/numerics/funcs.h"
@@ -359,10 +359,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             m_qdotRadiation[j] = radiative_heat_loss;
         }
     }
-    
-    // for(int iz=0; iz<m_z.size(); ++iz){
-    //     std::cout <<"density check @ j = " << iz << " --->" << density(iz) << std::endl;
-    // }
 
     for (size_t j = jmin; j <= jmax; j++) {
         //----------------------------------------------
@@ -378,9 +374,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             rsd[index(c_offset_U,0)] =
                 -(rho_u(x,1) - rho_u(x,0))/m_dz[0]
                 -(density(1)*V(x,1) + density(0)*V(x,0));
-
-            /********** spray cloud mass source **********/
-            rsd[index(c_offset_U,0)] += cloud->mtf(0)/m_dz[0];
 
             // the inlet (or other) object connected to this one will modify
             // these equations by subtracting its values for V, T, and mdot. As
@@ -431,7 +424,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             //    Species equations
             //
             //   \rho dY_k/dt + \rho u dY_k/dz + dJ_k/dz
-            //   = M_k\omega_k + Svap
+            //   = M_k\omega_k
             //-------------------------------------------------
             getWdot(x,j);
             for (size_t k = 0; k < m_nsp; k++) {
@@ -442,13 +435,9 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
-
-            /********** spray cloud species source **********/
-                // rsd[index(c_offset_Y + k, j)]
-                // = (Dirac(k, cloud->fuelIndex())-Y(x,k,j))*cloud->mtf(j)/(z(j+1)-z(j-1));
-                
                 diag[index(c_offset_Y + k, j)] = 1;
             }
+
             //-----------------------------------------------
             //    energy equation
             //
@@ -465,9 +454,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 const vector_fp& cp_R = m_thermo->cp_R_ref();
                 double sum = 0.0;
                 double sum2 = 0.0;
-                
-                std::vector<size_t> F = cloud->fuelIndex();
-
                 for (size_t k = 0; k < m_nsp; k++) {
                     double flxk = 0.5*(m_flux(k,j-1) + m_flux(k,j));
                     sum += wdot(k,j)*h_RT[k];
@@ -482,11 +468,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
-                
-            /********** spray cloud energy source **********/
-                //for single component fuel droplet:
-                // rsd[index(c_offset_T, j)] += cloud->htf(j)/m_dz[j];
-
                 diag[index(c_offset_T, j)] = 1;
             } else {
                 // residual equations if the energy equation is disabled
@@ -509,7 +490,7 @@ void StFlow::updateTransport(doublereal* x, size_t j0, size_t j1)
             doublereal rho = m_thermo->density();
             m_visc[j] = (m_dovisc ? m_trans->viscosity() : 0.0);
             m_trans->getMultiDiffCoeffs(m_nsp, &m_multidiff[mindex(0,0,j)]);
-            
+
             // Use m_diff as storage for the factor outside the summation
             for (size_t k = 0; k < m_nsp; k++) {
                 m_diff[k+j*m_nsp] = m_wt[k] * rho / (wtm*wtm);
@@ -964,50 +945,29 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
     //
     //    d(\rho u)/dz + 2\rho V = 0
     //----------------------------------------------
-    if (domainType() == cAxisymmetricStagnationFlow) 
-    {
+    if (domainType() == cAxisymmetricStagnationFlow) {
         // Note that this propagates the mass flow rate information to the left
         // (j+1 -> j) from the value specified at the right boundary. The
         // lambda information propagates in the opposite direction.
         rsd[index(c_offset_U,j)] =
             -(rho_u(x,j+1) - rho_u(x,j))/m_dz[j]
             -(density(j+1)*V(x,j+1) + density(j)*V(x,j));
-    } 
-    else if (domainType() == cFreeFlow) 
-    {
-        if (grid(j) > m_zfixed) 
-        {
+    } else if (domainType() == cFreeFlow) {
+        if (grid(j) > m_zfixed) {
             rsd[index(c_offset_U,j)] =
                 - (rho_u(x,j) - rho_u(x,j-1))/m_dz[j-1]
                 - (density(j-1)*V(x,j-1) + density(j)*V(x,j));
-            
-            /********** spray cloud mass source **********/
-            //evaluate the evaporation source:
-            // rsd[index(c_offset_U, j)] += cloud->mtf(grid(j))/(m_dz[j-1]); 
-        } 
-        //TODO: flame front discretization:
-        else if (grid(j) == m_zfixed) 
-        {
+        } else if (grid(j) == m_zfixed) {
             if (m_do_energy[j]) {
                 rsd[index(c_offset_U,j)] = (T(x,j) - m_tfixed);
-                //evaluate the evaporation source:
-                rsd[index(c_offset_U, j)] += cloud->mtf(grid(j))/(m_dz[j-1]);
-            } 
-            else {
+            } else {
                 rsd[index(c_offset_U,j)] = (rho_u(x,j)
                                             - m_rho[0]*0.3);
-            /********** spray cloud mass source **********/
-                // rsd[index(c_offset_U, j)] += cloud->mtf(grid(j))/(m_dz[j-1]);
             }
-        } 
-        else if (grid(j) < m_zfixed) 
-        {
+        } else if (grid(j) < m_zfixed) {
             rsd[index(c_offset_U,j)] =
                 - (rho_u(x,j+1) - rho_u(x,j))/m_dz[j]
                 - (density(j+1)*V(x,j+1) + density(j)*V(x,j));
-                
-            /********** spray cloud mass source **********/
-            rsd[index(c_offset_U, j)] += cloud->mtf(grid(j))/(m_dz[j]);
         }
     }
 }

@@ -227,10 +227,10 @@ int Sim1D::newtonSolve(int loglevel)
 void Sim1D::solve(int loglevel, bool refine_grid)
 {
     bool convg = false;
-    while(!convg)
+    do
     {
-        cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
-        cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
+        // cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
+        // cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
         //Gas-phase solver:
         int new_points = 1;
         doublereal dt = m_tstep;
@@ -342,16 +342,19 @@ void Sim1D::solve(int loglevel, bool refine_grid)
             }
         }
         //LPT:
+        cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
+
+        cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
+
         // cloud->solve();//solve the ODE of parcel's motion.
+
         // cloud->evalTransf();//import the liquid source into Gas phase flow.
 
         // convg = cloud->evalRsd(m_x);//determine if converge?
-        convg = true;
-        if(convg == true)
-        {
-            break;
-        }
-    }
+        // convg = true;
+
+    }while (!convg);
+    
 }
 
 int Sim1D::refine(int loglevel)
