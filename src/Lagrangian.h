@@ -236,10 +236,19 @@ class Lagrangian
             
         }
 
-        void parcel_time_advancing(double & xp_curr, double & up_curr, int n, bool inertia_parcel);
-        double parcel_acc(double & _xp, double & _up, const double & diameter_p, const double & density_p);
+        //void parcel_time_advancing(double & xp_curr, double & up_curr, int n, bool inertia_parcel);
+        //double parcel_acc(double & _xp, double & _up, const double & diameter_p, const double & density_p);
 
         void write() const;
+
+
+        void RK4_time_advancing();
+        void update_curr();
+        double calc_dxp_dt();
+        double calc_dup_dt();
+        double calc_dmd_dt();
+        double calc_dTd_dt();
+
     private:
         StFlow* gas;
 
@@ -278,6 +287,9 @@ class Lagrangian
         vector_fp cp_;
         vector_fp kappa_;
         std::vector<std::vector<doublereal>> Y_;
+
+        double curr_dp, curr_md, curr_up, curr_Td, curr_xp, curr_rhop;
+        bool inertia_parcel;
 
         size_t Np; //parcel number.
         size_t Nd; //droplet number per parcel.
