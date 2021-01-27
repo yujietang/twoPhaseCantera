@@ -204,16 +204,16 @@ int main()
     //             << ii << "] = " 
     //             << solution[ii] << std::endl;
     // }
-    cloud.clearGasFlow();
+    // cloud.clearGasFlow();
 
-    std::cout << "\n########## The flame front position is: "
-                << gasflow.zfixed()
-                << " [m] ##########\n" << std::endl;
+    // std::cout << "\n########## The flame front position is: "
+    //             << gasflow.zfixed()
+    //             << " [m] ##########\n" << std::endl;
 
-    cloud.evalGasFlow(solution);
-    // cloud.evalTransf();
-    cloud.solve();
-    cloud.write();
+    // cloud.evalGasFlow(solution);
+    // // cloud.evalTransf();
+    // cloud.solve();
+    // cloud.write();
     
     return 0;
 }

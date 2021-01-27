@@ -81,17 +81,8 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
                     Yg[k].push_back(solution[i]);
                 }
             }
-            // for(size_t k=0; k<fuelName_.size(); ++k)
-            // {
-            //     if(i%(gas->nsp()+c_offset_Y)==fuelIndex_[k]){
-            //         Yg[k].push_back(solution[i]);
-            //     }
-            // }
         }
     }
-
-    evalRsd(solution);
-
     /******mass and heat transfer******/
     mtf_.resize(z.size(), 0.0);
     htf_.resize(z.size(), 0.0);
@@ -433,16 +424,18 @@ bool Lagrangian::evalRsd(const vector_fp& solution)
         }    
     }
     
-    for(size_t ii=0; ii<Told.size(); ++ii){
-        Phi0 += sqrt(Tg[ii]*Tg[ii]);
+    for(size_t ii=0; ii<Tg.size(); ++ii){
+        Phi0 += Tg[ii]*Tg[ii];
     }
+    Phi0 = sqrt(Phi0);
     for(size_t jj=0; jj<Tnew.size(); ++jj){
-        Phi1 += sqrt(Tnew[jj]*Tnew[jj]);
+        Phi1 += Tnew[jj]*Tnew[jj];
     }
+    Phi1 = sqrt(Phi1);
 
     /*****evaluate the residual*****/
     rsd = (Phi1 -Phi0)/Phi0;
-    std::cout << "The coupled RSD = " << Phi0 << std::endl;
+    std::cout << "The coupled RSD = " << rsd << std::endl;
     if(rsd < 1.0e-4){
         std::cout << "\nResidual Checking has been done!\n" << std::endl;
         return true;
