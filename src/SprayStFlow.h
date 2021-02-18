@@ -304,6 +304,12 @@ public:
         cloud = &field;
     }
 
+    bool if_do_spray_source(bool do_spray_source)
+    {
+        spray_source = do_spray_source;
+        return spray_source;
+    }
+
 protected:
     doublereal wdot(size_t k, size_t j) const {
         return m_wdot(k,j);
@@ -527,6 +533,8 @@ private:
 
     //! Lagrangian particle mists
     const Lagrangian* cloud;
+
+    bool spray_source;
 };
 
 /**

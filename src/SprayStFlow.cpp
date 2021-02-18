@@ -3,7 +3,8 @@
 // This file is part of Cantera. See License.txt in the top-level directory or
 // at http://www.cantera.org/license.txt for license and copyright information.
 
-#include "cantera/oneD/StFlow.h"
+// #include "cantera/oneD/StFlow.h"
+#include "SprayStFlow.h"
 #include "cantera/base/ctml.h"
 #include "cantera/transport/TransportBase.h"
 #include "cantera/numerics/funcs.h"
@@ -404,6 +405,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             // set residual of poisson's equ to zero
             rsd[index(c_offset_E, j)] = x[index(c_offset_E, j)];
         } else { // interior points
+            // std::cout << "spray source bool = " << spray_source << std::endl;
             evalContinuity(j, x, rsd, diag, rdt);
             // set residual of poisson's equ to zero
             rsd[index(c_offset_E, j)] = x[index(c_offset_E, j)];
@@ -435,6 +437,11 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
+
+                /****** liquid source 2-way coupled ******/
+                // rsd[index(c_offset_Y + k, j)] += //Sm
+
+
                 diag[index(c_offset_Y + k, j)] = 1;
             }
 
@@ -465,6 +472,15 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
 
                 rsd[index(c_offset_T, j)] = - m_cp[j]*rho_u(x,j)*dtdzj
                                             - divHeatFlux(x,j) - sum - sum2;
+                // //spray 2-way coupled:
+                // if(spray_source){
+                //     std::cout << "spray source calculating for energy... ..." << std::endl;
+                //     rsd[index(c_offset_T,j)] -= cloud->htf(j)/m_dz[j];
+                //     std::cout << "magnitude of energy source term = " << cloud->htf(j)/m_dz[j] << std::endl;
+                // }
+                // else{
+                //     //no spray source
+                // }
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
@@ -952,22 +968,46 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
         rsd[index(c_offset_U,j)] =
             -(rho_u(x,j+1) - rho_u(x,j))/m_dz[j]
             -(density(j+1)*V(x,j+1) + density(j)*V(x,j));
-    } else if (domainType() == cFreeFlow) {
+    } 
+    else if (domainType() == cFreeFlow) {
+        // std::cout << "########## the domain type is FreeFlow! ##########" << std::endl;
         if (grid(j) > m_zfixed) {
             rsd[index(c_offset_U,j)] =
                 - (rho_u(x,j) - rho_u(x,j-1))/m_dz[j-1]
                 - (density(j-1)*V(x,j-1) + density(j)*V(x,j));
-        } else if (grid(j) == m_zfixed) {
+            
+            /****** liquid source 2-way coupled ******/
+            if(spray_source){
+                std::cout << "spray source calculating ... ..." << std::endl;
+                rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j-1];
+            }
+            else{
+                //no spray source
+            }
+            /*****************************************/
+        } 
+        else if (grid(j) == m_zfixed) {
             if (m_do_energy[j]) {
                 rsd[index(c_offset_U,j)] = (T(x,j) - m_tfixed);
             } else {
                 rsd[index(c_offset_U,j)] = (rho_u(x,j)
                                             - m_rho[0]*0.3);
             }
-        } else if (grid(j) < m_zfixed) {
+        } 
+        else if (grid(j) < m_zfixed) {
             rsd[index(c_offset_U,j)] =
                 - (rho_u(x,j+1) - rho_u(x,j))/m_dz[j]
                 - (density(j+1)*V(x,j+1) + density(j)*V(x,j));
+            
+            /****** liquid source 2-way coupled ******/
+            if(spray_source){
+                rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j];
+            }
+            else{
+                //no spray source
+            }
+            /*****************************************/
+
         }
     }
 }

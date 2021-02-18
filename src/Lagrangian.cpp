@@ -83,6 +83,7 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
             }
         }
     }
+
     /******mass and heat transfer******/
     mtf_.resize(z.size(), 0.0);
     htf_.resize(z.size(), 0.0);
@@ -146,13 +147,13 @@ void Lagrangian::evalTransf()
         dz = z[iz+1] - z[iz];
         leftz = z[iz];
         rightz = z[iz+1];
-
+        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ z = " << iz << std::endl;
         for(size_t ip = 1; ip < Np; ++ip)
         {
             if(xp[ip] > leftz && xp[ip] < rightz){
                 leftLength = xp[ip] - z[ip];
                 rightLength = z[iz+1] - xp[ip];
-
+                // std::cout << "xp["<<ip<<"] = " << xp[ip] << std::endl;
                 mtf_[iz] += mtfp_[ip] 
                             + ((mtfp_[ip] - mtfp_[ip-1])/(xp[ip] - xp[ip-1]))*leftLength;
                 mtf_[iz+1] += mtfp_[ip]
@@ -162,8 +163,17 @@ void Lagrangian::evalTransf()
                 htf_[iz+1] += htfp_[ip]
                             + ((htfp_[ip+1] - htfp_[ip])/(xp[ip+1]-xp[ip]))*rightLength;
             }
-            else break;
+            else{
+                mtf_[iz] += 0.0;
+                mtf_[iz+1] += 0.0;
+                htf_[iz] += 0.0;
+                htf_[iz+1] += 0.0;
+            }
         }
+    }
+    for(int zz=0; zz<mtf_.size();++zz){
+        std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
+        std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
     }
 }
 
@@ -183,14 +193,14 @@ void Lagrangian::solve()
     // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
     {
-        std::cout << "**************** Tracking the parcel [ "
-                    << n << " ] ****************\n" << std::endl;
+        // std::cout << "**************** Tracking the parcel [ "
+        //             << n << " ] ****************\n" << std::endl;
         
         _xp += up[n-1]*dtlag;
 
         //parcel's position:
         xp.push_back(_xp);
-        std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
+        // std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
         
         evalParcelFlow();
 
@@ -217,18 +227,18 @@ void Lagrangian::solve()
         //parcel's velocity
         //Yuan & Chen (1976):
         _ug = intpfield(ug, z, xp[n-1]);
-        std::cout << "LOCAL Parcel VELOCITY AT x_p = " 
-                << xp[n-1] 
-                << " = "
-                << up[n-1] << "\n"<< std::endl;
+        // std::cout << "LOCAL Parcel VELOCITY AT x_p = " 
+        //         << xp[n-1] 
+        //         << " = "
+        //         << up[n-1] << "\n"<< std::endl;
         _rhog = intpfield(rhog, z, xp[n-1]);
         _mug = intpfield(mug, z, xp[n-1]);
         _Red = _rhog*std::abs(_ug - up[n-1])*dp[n-1]/(_mug+small);
-        if(_ug == up[n-1]){
-            std::cout << "\n######## Warning: No slip velocity! ########\n" << std::endl;
-        }
-        std::cout << "Re_d is :" << _Red << "\n" << std::endl;
-        std::cout << "Drag coeff. is : " << Cd(_Red) << "\n" << std::endl;
+        // if(_ug == up[n-1]){
+        //     std::cout << "\n######## Warning: No slip velocity! ########\n" << std::endl;
+        // }
+        // std::cout << "Re_d is :" << _Red << "\n" << std::endl;
+        // std::cout << "Drag coeff. is : " << Cd(_Red) << "\n" << std::endl;
         up.push_back(
             up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
             // _ug //no drag force
@@ -264,8 +274,8 @@ void Lagrangian::solve()
             break;
         }
 
-        std::cout << "******************** End Tracking ********************"
-                << "\n" << std::endl;
+        // std::cout << "******************** End Tracking ********************"
+        //         << "\n" << std::endl;
     }
     // for(size_t ip = 0; ip < mp.size(); ++ip)
     // {
@@ -369,6 +379,8 @@ void Lagrangian::clearGasFlow()
     cpg.clear();
     kappag.clear();
     mw.clear();
+    Told.clear();
+    Tnew.clear();
     Yg.resize(gas->nsp());
     for(size_t k=0; k<Yg.size(); ++k){
         Yg[k].clear();
@@ -411,37 +423,43 @@ doublereal Lagrangian::intpfield(
     }
 }
 
-bool Lagrangian::evalRsd(const vector_fp& solution)
+bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
 {   
-    std::cout << "\nCheck the Langrangian-Eulerian Coupled residual ...\n" << std::endl;
     doublereal rsd = 1.0;
-    doublereal Phi0 = 0.0;
-    doublereal Phi1 = 1.0;
-
-    for(size_t i = 0; i < solution.size(); ++i){
-        if(i%(gas->nsp()+c_offset_Y)==2){
-            Tnew.push_back(solution[i]);
-        }    
-    }
+    doublereal Phi_old = Tg[20];
+    doublereal Phi_new = Tg[20];
     
-    for(size_t ii=0; ii<Tg.size(); ++ii){
-        Phi0 += Tg[ii]*Tg[ii];
-    }
-    Phi0 = sqrt(Phi0);
-    for(size_t jj=0; jj<Tnew.size(); ++jj){
-        Phi1 += Tnew[jj]*Tnew[jj];
-    }
-    Phi1 = sqrt(Phi1);
-
-    /*****evaluate the residual*****/
-    rsd = (Phi1 -Phi0)/Phi0;
-    std::cout << "The coupled RSD = " << rsd << std::endl;
-    if(rsd < 1.0e-4){
-        std::cout << "\nResidual Checking has been done!\n" << std::endl;
-        return true;
+    if(Nloop == 1)
+    {
+        std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
+        Phi_old = Tg[20];
+        return false;
     }
     else{
-        return false;
+        std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
+        
+        for(size_t i = 0; i < solution.size(); ++i){
+            if(i%(gas->nsp()+c_offset_Y)==2){
+                Tnew.push_back(solution[i]);
+            }    
+        }
+        
+        Phi_new = Tnew[20];
+        std::cout << "\n Told = " << Phi_old << std::endl;
+        std::cout << "\n Tnew = " << Phi_new << std::endl;
+        /*****evaluate the residual*****/
+        rsd = (Phi_new -Phi_old)/Phi_old;
+
+        std::cout << "\nThe coupled RSD = " << rsd << std::endl;
+        if(rsd < 1.0e-2){
+            std::cout << "\nResidual Checking has been done!\n" << std::endl;
+            return true;
+        }
+        else{
+            return false;
+        }
+
+        Phi_old = Tnew[20];
     }
 }
 
@@ -674,7 +692,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("./result/FreeFlamewithDrag.csv");
+    std::ofstream fout1("./result/2way.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

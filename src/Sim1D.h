@@ -224,6 +224,10 @@ public:
         cloud = &cloud_;
     }
 
+    void SprStFlow(StFlow& gasflow_){
+        gasflow = &gasflow_;
+    }
+
     const vector_fp& solutionVector() const
     {
         return m_x;
@@ -267,6 +271,7 @@ private:
     int newtonSolve(int loglevel);
 
     Lagrangian* cloud;
+    StFlow* gasflow;
 };
 
 }

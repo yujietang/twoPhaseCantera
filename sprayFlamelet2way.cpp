@@ -19,7 +19,7 @@ int main()
     size_t dropletNumber(1);
 
     //determine the lagrangian evaporation time scale:
-    doublereal dtlag(1e-5);
+    doublereal dtlag(2e-5);
     // doublereal dtlag(5e-5);
 
     //for single component of ethanol fuel:
@@ -91,7 +91,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 50;//initial grid point number
+    int nz = 20;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector
@@ -128,6 +128,7 @@ int main()
     
     Sim1D sprayflame(domains);
     sprayflame.Cloud(cloud);
+    sprayflame.SprStFlow(gasflow);
     /******Supply the initial guess******/
     vector_fp locs{0.0, 0.3, 0.7, 1.0};
     vector_fp value;
@@ -213,7 +214,7 @@ int main()
     // cloud.evalGasFlow(solution);
     // // cloud.evalTransf();
     // cloud.solve();
-    // cloud.write();
+    cloud.write();
     
     return 0;
 }

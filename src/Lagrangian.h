@@ -64,7 +64,7 @@ class Lagrangian
         doublereal extpfield(doublereal value, vector_fp& grid, doublereal xp) const;
         
         //Calculate the residual during iteration:
-        bool evalRsd(const vector_fp& solution);
+        bool evalRsd(const size_t& Nloop, const vector_fp& solution);
 
         //set the mass flux of liquid droplets:
         //@ mdot: gas phase mass flux.
