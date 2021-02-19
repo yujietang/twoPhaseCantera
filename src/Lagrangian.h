@@ -166,8 +166,8 @@ class Lagrangian
         doublereal small;
 
         //evaluate residual:
-        vector_fp Told;
-        vector_fp Tnew;
+        doublereal Told;
+        doublereal Tnew;
         
         //gas phase:
         vector_fp z;

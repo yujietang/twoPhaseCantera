@@ -32,7 +32,7 @@ int main()
     /********************Set Gas Flow********************/
     IdealGasMix gas("Ethanol_31.cti", "gas");
 
-    doublereal temp = 300.0; // K
+    doublereal temp = 320.0; // K
     doublereal pressure = 1.0*OneAtm; //atm
     doublereal uin = 0.1; //m/sec
     doublereal phi = 1.0; //equivalence ratio
@@ -91,7 +91,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 20;//initial grid point number
+    int nz = 800;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector

@@ -150,9 +150,8 @@ void Lagrangian::evalTransf()
         for(size_t ip = 1; ip < Np; ++ip)
         {
             if(xp[ip] > leftz && xp[ip] < rightz){
-                leftLength = xp[ip] - z[ip];
+                leftLength = xp[ip] - z[iz];
                 rightLength = z[iz+1] - xp[ip];
-                std::cout << "mtfp["<<ip<<"] = " << mtfp_[ip] << std::endl;
                 mtf_[iz] += mtfp_[ip] 
                             + ((mtfp_[ip] - mtfp_[ip-1])/(xp[ip] - xp[ip-1]))*leftLength;
                 mtf_[iz+1] += mtfp_[ip]
@@ -378,8 +377,6 @@ void Lagrangian::clearGasFlow()
     cpg.clear();
     kappag.clear();
     mw.clear();
-    Told.clear();
-    Tnew.clear();
     Yg.resize(gas->nsp());
     for(size_t k=0; k<Yg.size(); ++k){
         Yg[k].clear();
@@ -425,29 +422,27 @@ doublereal Lagrangian::intpfield(
 bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
 {   
     doublereal rsd = 1.0;
-    doublereal Phi_old = Tg[20];
-    doublereal Phi_new = Tg[20];
+    doublereal Phi_old = Told;
+    doublereal Phi_new = small;
     
     if(Nloop == 1)
     {
         std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
-        Phi_old = Tg[20];
+        Told = Tg[Tg.size()-1];
+        Phi_old = Told;
         return false;
     }
     else{
         std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
         
-        for(size_t i = 0; i < solution.size(); ++i){
-            if(i%(gas->nsp()+c_offset_Y)==2){
-                Tnew.push_back(solution[i]);
-            }    
-        }
-        
-        Phi_new = Tnew[20];
+        Tnew = Tg[Tg.size()-1];
+        Phi_new = Tnew;
+
         std::cout << "\n Told = " << Phi_old << std::endl;
         std::cout << "\n Tnew = " << Phi_new << std::endl;
+
         /*****evaluate the residual*****/
-        rsd = (Phi_new -Phi_old)/Phi_old;
+        rsd = abs(Phi_new - Phi_old)/(Phi_old + small);
 
         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
         if(rsd < 1.0e-2){
@@ -457,9 +452,8 @@ bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
         else{
             return false;
         }
-
-        Phi_old = Tnew[20];
     }
+    Told = Tnew;
 }
 
 void Lagrangian::setMpdot(doublereal mdot)

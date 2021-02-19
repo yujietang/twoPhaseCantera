@@ -438,9 +438,15 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
 
-                /****** liquid source 2-way coupled ******/
-                // rsd[index(c_offset_Y + k, j)] += //Sm
-
+                //spray 2-way coupled:
+                if(spray_source){
+                    if(k==30){
+                        rsd[index(c_offset_Y + k,j)] += cloud->mtf(j)/m_dz[j];
+                    }
+                }
+                else{
+                    //no spray source
+                }
 
                 diag[index(c_offset_Y + k, j)] = 1;
             }
@@ -472,15 +478,15 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
 
                 rsd[index(c_offset_T, j)] = - m_cp[j]*rho_u(x,j)*dtdzj
                                             - divHeatFlux(x,j) - sum - sum2;
-                // //spray 2-way coupled:
-                // if(spray_source){
-                //     std::cout << "spray source calculating for energy... ..." << std::endl;
-                //     rsd[index(c_offset_T,j)] -= cloud->htf(j)/m_dz[j];
-                //     std::cout << "magnitude of energy source term = " << cloud->htf(j)/m_dz[j] << std::endl;
-                // }
-                // else{
-                //     //no spray source
-                // }
+                
+                //spray 2-way coupled:
+                if(spray_source){
+                    rsd[index(c_offset_T,j)] -= cloud->htf(j)/m_dz[j];
+                }
+                else{
+                    //no spray source
+                }
+
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
@@ -978,7 +984,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             
             /****** liquid source 2-way coupled ******/
             if(spray_source){
-                std::cout << "spray source calculating for continuity... ..." << std::endl;
                 rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j-1];
             }
             else{
@@ -1001,9 +1006,7 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             
             /****** liquid source 2-way coupled ******/
             if(spray_source){
-                std::cout << "spray source calculating for continuity... ..." << std::endl;
                 rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j];
-                std::cout << "$$$$$$$$$$$$$$ mtf ["<< j << "] = " << cloud->mtf(j) << std::endl;
             }
             else{
                 //no spray source
