@@ -147,13 +147,12 @@ void Lagrangian::evalTransf()
         dz = z[iz+1] - z[iz];
         leftz = z[iz];
         rightz = z[iz+1];
-        std::cout << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ z = " << iz << std::endl;
         for(size_t ip = 1; ip < Np; ++ip)
         {
             if(xp[ip] > leftz && xp[ip] < rightz){
                 leftLength = xp[ip] - z[ip];
                 rightLength = z[iz+1] - xp[ip];
-                // std::cout << "xp["<<ip<<"] = " << xp[ip] << std::endl;
+                std::cout << "mtfp["<<ip<<"] = " << mtfp_[ip] << std::endl;
                 mtf_[iz] += mtfp_[ip] 
                             + ((mtfp_[ip] - mtfp_[ip-1])/(xp[ip] - xp[ip-1]))*leftLength;
                 mtf_[iz+1] += mtfp_[ip]
@@ -171,10 +170,10 @@ void Lagrangian::evalTransf()
             }
         }
     }
-    for(int zz=0; zz<mtf_.size();++zz){
-        std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
-        std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
-    }
+    // for(int zz=0; zz<mtf_.size();++zz){
+    //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
+    //     std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
+    // }
 }
 
 void Lagrangian::solve()

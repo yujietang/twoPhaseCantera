@@ -978,7 +978,7 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             
             /****** liquid source 2-way coupled ******/
             if(spray_source){
-                std::cout << "spray source calculating ... ..." << std::endl;
+                std::cout << "spray source calculating for continuity... ..." << std::endl;
                 rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j-1];
             }
             else{
@@ -1001,7 +1001,9 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             
             /****** liquid source 2-way coupled ******/
             if(spray_source){
+                std::cout << "spray source calculating for continuity... ..." << std::endl;
                 rsd[index(c_offset_U,j)] += cloud->mtf(j)/m_dz[j];
+                std::cout << "$$$$$$$$$$$$$$ mtf ["<< j << "] = " << cloud->mtf(j) << std::endl;
             }
             else{
                 //no spray source
