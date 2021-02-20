@@ -169,6 +169,9 @@ void Lagrangian::evalTransf()
             }
         }
     }
+    // for(size_t ii=0;ii<mtfp_.size();++ii){
+    //     std::cout << "mtf[ " << ii << " ] = " << mtfp_[ii] << std::endl;
+    // }
     // for(int zz=0; zz<mtf_.size();++zz){
     //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
     //     std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
@@ -420,40 +423,34 @@ doublereal Lagrangian::intpfield(
 }
 
 bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
-{   
-    doublereal rsd = 1.0;
-    doublereal Phi_old = Told;
-    doublereal Phi_new = small;
-    
+{      
     if(Nloop == 1)
     {
         std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
         Told = Tg[Tg.size()-1];
-        Phi_old = Told;
         return false;
     }
     else{
-        std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
-        
         Tnew = Tg[Tg.size()-1];
-        Phi_new = Tnew;
+        doublereal rsd = 1.0;
 
-        std::cout << "\n Told = " << Phi_old << std::endl;
-        std::cout << "\n Tnew = " << Phi_new << std::endl;
+        std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
+        std::cout << "\n Told = " << Told << std::endl;
+        std::cout << "\n Tnew = " << Tnew << std::endl;
 
         /*****evaluate the residual*****/
-        rsd = abs(Phi_new - Phi_old)/(Phi_old + small);
+        rsd = abs(Tnew - Told)/(Told + small);
 
         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-        if(rsd < 1.0e-2){
+        if(rsd < 1e-2){
             std::cout << "\nResidual Checking has been done!\n" << std::endl;
             return true;
         }
         else{
+            Told = Tnew;
             return false;
         }
     }
-    Told = Tnew;
 }
 
 void Lagrangian::setMpdot(doublereal mdot)

@@ -310,6 +310,11 @@ public:
         return spray_source;
     }
 
+    void turn_on_spray(bool do_spray_source) 
+    {
+        spray_source = do_spray_source;
+    }
+
 protected:
     doublereal wdot(size_t k, size_t j) const {
         return m_wdot(k,j);
