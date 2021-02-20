@@ -88,13 +88,13 @@ class Lagrangian
         //mass transfer rate for one parcel at position xp_n:
         doublereal mtfp(size_t n)
         {
-            return 10000*mddot(n);
+            return Nd*mddot(n);
         }
 
         //heat transfer rate for one parcel at position xp_n:
         doublereal htfp(size_t n) 
         {
-            return 10000*getmp(n)*cp_[n]*Tddot(n);
+            return Nd*getmp(n)*cp_[n]*Tddot(n);
         }
 
         //mass transfer rate at grid points j [kg/s]:

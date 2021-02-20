@@ -16,7 +16,7 @@ int main()
     doublereal parcelDiameter(25e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
-    size_t dropletNumber(1);
+    size_t dropletNumber(10000);
 
     //determine the lagrangian evaporation time scale:
     doublereal dtlag(2e-5);
@@ -92,7 +92,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 20;//initial grid point number
+    int nz = 800;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector

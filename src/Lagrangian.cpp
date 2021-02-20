@@ -38,14 +38,14 @@ Lagrangian::Lagrangian(
 }
 
 void Lagrangian::setupInjection(
-    doublereal d,
-    doublereal Tp,
-    doublereal mdotp
+    doublereal d_inj,
+    doublereal Tp_inj,
+    doublereal Mdotp_inj
 )
 {
     doublereal Rhop_inj = fuel.rho(Tp_inj);
-    doublereal Vd_inj = Pi*std::pow(d, 3.0)/6.0;
-    Md_inj = fuel.rho(Tp)*Vd_inj;
+    doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
+    Md_inj = Rhop_inj*Vd_inj;
     Mdotp_inj = Nd*Md_inj/dtlag;
 }
 
@@ -189,7 +189,7 @@ void Lagrangian::solve()
     doublereal _mug = mug[0];
     doublereal _Red;
     //tracking step n:
-    size_t marchingStep = 16000;
+    size_t marchingStep = 2e+5;
 
     // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
@@ -201,18 +201,18 @@ void Lagrangian::solve()
 
         //parcel's position:
         xp.push_back(_xp);
-        // std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
+        std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
         
         evalParcelFlow();
 
         //parcel's mass:
         mp.push_back(
-            mp[n-1] + Nd*dtlag*mddot(n-1)
+            mp[n-1] + dtlag*mddot(n-1)
         );
 
         //parcel's temperature:
         Tp.push_back(
-            Tp[n-1] + Nd*dtlag*Tddot(n-1)
+            Tp[n-1] + dtlag*Tddot(n-1)
         );
 
         //parcel's density
@@ -336,7 +336,7 @@ void Lagrangian::solve()
 void Lagrangian::inject()
 {
     xp.push_back(z[0]);
-    mp.push_back(Nd*Md_inj);//TODO: evaluate the parcels' and droplets' quantities
+    mp.push_back(Md_inj);//TODO: evaluate the parcels' and droplets' quantities
     Tp.push_back(Tp_inj);
     up.push_back(ug[0]);
     dp.push_back(d_inj);
@@ -608,7 +608,7 @@ doublereal Lagrangian::Tddot(size_t n)
     //For droplet:
     const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO:only for ethanol
-    doublereal md = mp[n]/Nd;
+    doublereal md = mp[n];
     doublereal Td = Tp[n];
     //For carrier phase:
     doublereal pc = p0;
