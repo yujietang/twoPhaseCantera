@@ -159,6 +159,7 @@ class Lagrangian
         }
 
         void write() const;
+    
     private:
         StFlow* gas;
         Ethanol fuel;

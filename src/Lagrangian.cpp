@@ -22,7 +22,7 @@ Lagrangian::Lagrangian(
     Np(0),
     dtlag(lagrangianTimeStep),
     gas(0),
-    small(1.0e-13)
+    small(1.0e-10)
 {
     setupInjection(d_inj, 
                 Tp_inj,
@@ -170,7 +170,7 @@ void Lagrangian::evalTransf()
         }
     }
     // for(size_t ii=0;ii<mtfp_.size();++ii){
-    //     std::cout << "mtf[ " << ii << " ] = " << mtfp_[ii] << std::endl;
+    //     std::cout << "htf[ " << ii << " ] = " << htfp_[ii] << std::endl;
     // }
     // for(int zz=0; zz<mtf_.size();++zz){
     //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
@@ -201,7 +201,7 @@ void Lagrangian::solve()
 
         //parcel's position:
         xp.push_back(_xp);
-        std::cout << "Parcel's position = " << xp[xp.size()-1] << "\n" << std::endl;
+        std::cout << "Parcel's position = " << xp.back() << "\n" << std::endl;
         
         evalParcelFlow();
 
@@ -269,7 +269,8 @@ void Lagrangian::solve()
         if(Np != mp.size()){
             std::cerr << "###### Error: parcel's number is not equal to Np! ######";
         }
-
+        
+        std::cout << "$$$$$$$$$$$$$$$$ = " << (dp[n]<small || mp[n]<small || _xp > 0.6) << std::endl;
         if(dp[n]<small || mp[n]<small || _xp > 0.6)
         {
             break;

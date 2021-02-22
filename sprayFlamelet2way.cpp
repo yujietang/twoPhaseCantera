@@ -13,13 +13,13 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(25e-6); // m
+    doublereal parcelDiameter(75e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
-    size_t dropletNumber(10000);
+    size_t dropletNumber(2000);
 
     //determine the lagrangian evaporation time scale:
-    doublereal dtlag(2e-5);
+    doublereal dtlag(1e-5);
     // doublereal dtlag(5e-5);
 
     //for single component of ethanol fuel:
@@ -92,7 +92,7 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 800;//initial grid point number
+    int nz = 20;//initial grid point number
     // int nz = 40;//initial grid point number
     doublereal lz = 0.1;//initial grid length
     vector_fp z(nz);//initial grid point vector
@@ -192,7 +192,7 @@ int main()
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nospray.csv", std::ios::trunc);
+    std::ofstream outfile("./result/T300debug.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",

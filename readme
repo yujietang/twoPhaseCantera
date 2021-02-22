@@ -1,0 +1,6 @@
+A two-way coupling solver 
+which calculating the interaction of
+single component parcel(a group of droplet)
+with the premixed 1-D flame. 
+The evaporation model is gradient 
+diffusion evaporation model.
