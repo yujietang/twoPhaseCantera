@@ -233,6 +233,7 @@ void Sim1D::solve(int loglevel, bool refine_grid)
     {
         if(Nloop != 1){
             do_spray_source = true;
+            // do_spray_source = false;
         }
         gasflow->if_do_spray_source(do_spray_source);
 
@@ -348,7 +349,12 @@ void Sim1D::solve(int loglevel, bool refine_grid)
                 new_points = 0;
             }
         }
-        //LPT:
+        // //LPT:
+        // if(do_spray_source != true){
+        //     std::cout << "No spray...\n" << std::endl;
+        //     exit(0);
+        // }
+
         cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
 
         cloud->solve();//solve the ODE of parcel's motion.

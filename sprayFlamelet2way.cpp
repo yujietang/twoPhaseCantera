@@ -13,14 +13,14 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(75e-6); // m
+    doublereal parcelDiameter(50e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
-    size_t dropletNumber(2000);
-
-    //determine the lagrangian evaporation time scale:
-    doublereal dtlag(1e-5);
-    // doublereal dtlag(5e-5);
+    doublereal dtlag = 10e-6;
+    doublereal dropletNumber;
+    //mesh point number:
+    const size_t meshPointNumber = 20;
+    const doublereal domainLength = 0.1;
 
     //for single component of ethanol fuel:
     doublereal C_atoms = 2.0; // C2H5OH
@@ -32,9 +32,9 @@ int main()
     /********************Set Gas Flow********************/
     IdealGasMix gas("Ethanol_31.cti", "gas");
 
-    doublereal temp = 320.0; // K
+    doublereal temp = 300.0; // K
     doublereal pressure = 1.0*OneAtm; //atm
-    doublereal uin = 0.1; //m/sec
+    doublereal uin = 0.3; //m/sec
     doublereal phi = 1.0; //equivalence ratio
 
     size_t nsp = gas.nSpecies();
@@ -61,20 +61,26 @@ int main()
     vector_fp yin(nsp);
     gas.getMassFractions(&yin[0]);
 
+    const doublereal Sl = 0.35;//laminar flame speed;
+    const doublereal injMdot = rho_in*Sl*yin[gas.speciesIndex("C2H5OH")]/(1-yin[gas.speciesIndex("C2H5OH")]); 
+
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
     vector_fp yout(nsp);
     gas.getMassFractions(&yout[0]);
     doublereal rho_out = gas.density();
     doublereal Tad = gas.temperature();
-
     print("phi = {}, Tad = {}\n", phi, Tad);
 
+    //determine the lagrangian evaporation time scale:
+    // doublereal dtlag = domainLength/(10*Sl*meshPointNumber);
+    std::cout << "#\t lagrangian Time Step = \t" << dtlag << std::endl;
     /**********Lagrangian Cloud**********/
     Lagrangian cloud(
         parcelDiameter,
         injTemperature,
         injPressure,
         dtlag,
+        injMdot,
         dropletNumber
     );
     /**********Set liquid Fuel**********/
@@ -92,9 +98,8 @@ int main()
 
     /*************************Create Grid*************************/
     // create an initial grid
-    int nz = 20;//initial grid point number
-    // int nz = 40;//initial grid point number
-    doublereal lz = 0.1;//initial grid length
+    int nz = meshPointNumber;//initial grid point number
+    doublereal lz = domainLength;//initial grid length
     vector_fp z(nz);//initial grid point vector
     doublereal dz = lz/((doublereal)(nz - 1));//initial grid size
     //initialize the grid:

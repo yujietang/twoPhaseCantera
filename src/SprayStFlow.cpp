@@ -439,17 +439,27 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
 
                 //spray 2-way coupled:
-                if(spray_source){
-                    if(k==30){
-                        rsd[index(c_offset_Y + k,j)] -= (1.0 - Y(x,k,j))*cloud->mtf(j)/m_dz[j];
-                    }
-                    else{
-                        rsd[index(c_offset_Y + k,j)] += Y(x,k,j)*cloud->mtf(j)/m_dz[j];
-                    }
-                }
-                else{
-                    //no spray source
-                }
+                // if(spray_source){
+                //     doublereal Sspe = ((1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j])>(-1.0) ? ((1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]) : 0.0;
+                //     if(k==30){
+                //         rsd[index(c_offset_Y + k,j)] -= Sspe;
+                //         // std::cout << "j = " << j << "\t" << (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j] << std::endl;
+                //     }
+                //     // else{
+                //     //     rsd[index(c_offset_Y + k,j)] += Y(x,k,j)*cloud->mtf(j)/m_dz[j];
+                //     // }
+                // }
+                // else{
+                //     //no spray source
+                // }
+                // if(spray_source){
+                //     if(k==30){
+                //         rsd[index(c_offset_Y + k,j)] -= 1.0*cloud->mtf(j)/m_dz[j];
+                //     }
+                // }
+                // else{
+                //     //no spray source
+                // }
 
                 diag[index(c_offset_Y + k, j)] = 1;
             }

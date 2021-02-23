@@ -23,6 +23,7 @@ class Lagrangian
                    const doublereal TInjection,
                    const doublereal pinjection,
                    const doublereal lagrangianTimeStep,
+                   const doublereal Mdotinjection,
                    const size_t dropletNumber);
 
         //set up the injection properties:
@@ -77,6 +78,7 @@ class Lagrangian
         //Calculate the dmp/dt using the liquid evaporation model:
         //@ n: parcel's index
         doublereal mddot(size_t n);
+        
         //Calculate the dmp/dt using the theoritcal model:
         //@ n: parcel's index
         doublereal mddot_th(size_t n);
