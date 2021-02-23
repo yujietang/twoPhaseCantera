@@ -19,7 +19,7 @@ int main()
     doublereal dtlag = 10e-6;
     doublereal dropletNumber;
     //mesh point number:
-    const size_t meshPointNumber = 20;
+    const size_t meshPointNumber = 800;
     const doublereal domainLength = 0.1;
 
     //for single component of ethanol fuel:
