@@ -50,6 +50,7 @@ void Lagrangian::setupInjection(
     Md_inj = Rhop_inj*Vd_inj;
     NdperSec = Mdotp_inj/Md_inj;
     Nd = NdperSec*dtlag;
+    Nd = 5000;
     std::cout << "#\tn particles per parcel\t:\t" << Nd << std::endl;
 }
 

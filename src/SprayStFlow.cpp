@@ -440,13 +440,13 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
 
                 //spray 2-way coupled:
                 if(spray_source){
-                    doublereal Sspe = ((1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j])>(-1.0) ? ((1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]) : 0.0;
+                    doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                    doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
                     if(k==30){
-                        rsd[index(c_offset_Y + k,j)] -= Sspe;
-                        // std::cout << "j = " << j << "\t" << (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j] << std::endl;
+                        rsd[index(c_offset_Y + k,j)] -= (Sspef > (-1.0) ? Sspef : 0.0);
                     }
                     else{
-                        rsd[index(c_offset_Y + k,j)] += Y(x,k,j)*cloud->mtf(j)/m_dz[j];
+                        rsd[index(c_offset_Y + k,j)] -= (Sspe > (-1.0) ? Sspe : 0.0);
                     }
                 }
                 else{

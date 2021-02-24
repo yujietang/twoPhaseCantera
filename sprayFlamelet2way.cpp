@@ -13,7 +13,7 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(50e-6); // m
+    doublereal parcelDiameter(60e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
     doublereal dtlag = 10e-6;
@@ -21,6 +21,8 @@ int main()
     //mesh point number:
     const size_t meshPointNumber = 800;
     const doublereal domainLength = 0.1;
+    //liquid and mixture:
+    const doublereal phi_over = 1.0;//overall equivalence ratio
 
     //for single component of ethanol fuel:
     doublereal C_atoms = 2.0; // C2H5OH
@@ -35,7 +37,7 @@ int main()
     doublereal temp = 300.0; // K
     doublereal pressure = 1.0*OneAtm; //atm
     doublereal uin = 0.3; //m/sec
-    doublereal phi = 1.0; //equivalence ratio
+    doublereal phi = phi_over; //equivalence ratio
 
     size_t nsp = gas.nSpecies();
     vector_fp x(nsp, 0.0);
@@ -48,7 +50,7 @@ int main()
     x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic;
     x[gas.speciesIndex("AR")] = 0.01 / phi / fa_stoic;
 
-    // when the condition is pure air flow:
+    // when the condition is pure air flow  (1 mole air):
     // x[gas.speciesIndex("O2")] = 0.21;
     // x[gas.speciesIndex("N2")] = 0.78;
     // x[gas.speciesIndex("AR")] = 0.01;
@@ -197,7 +199,7 @@ int main()
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/T300debug.csv", std::ios::trunc);
+    std::ofstream outfile("./result/nospray.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
