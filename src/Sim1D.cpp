@@ -224,18 +224,20 @@ int Sim1D::newtonSolve(int loglevel)
     }
 }
 
-void Sim1D::solve(int loglevel, bool refine_grid)
+void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
 {
     bool convg = false;
-    bool do_spray_source = false;
+    bool AddSpraySource = false;
     size_t Nloop = 1;
     do
     {
-        if(Nloop != 1){
-            do_spray_source = true;
-            // do_spray_source = false;
+        if(Nloop == 1){
+            gasflow->if_do_spray_source(AddSpraySource);
         }
-        gasflow->if_do_spray_source(do_spray_source);
+        else{
+            AddSpraySource = do_spray;
+            gasflow->if_do_spray_source(AddSpraySource);
+        }
 
         cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
 
@@ -349,23 +351,20 @@ void Sim1D::solve(int loglevel, bool refine_grid)
                 new_points = 0;
             }
         }
-        // //LPT:
-        // if(do_spray_source != true){
-        //     std::cout << "No spray...\n" << std::endl;
-        //     exit(0);
-        // }
+        
+        if(AddSpraySource == true){
+            cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
 
-        cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
+            cloud->solve();//solve the ODE of parcel's motion.
 
-        cloud->solve();//solve the ODE of parcel's motion.
+            cloud->evalTransf();//import the liquid source into Gas phase flow.
 
-        cloud->evalTransf();//import the liquid source into Gas phase flow.
-
-        convg = cloud->evalRsd(Nloop, m_x);
+            convg = cloud->evalRsd(Nloop, m_x);
+        }
 
         Nloop++;
 
-    }while (!convg);
+    }while (!convg && (AddSpraySource == true));
     
 }
 

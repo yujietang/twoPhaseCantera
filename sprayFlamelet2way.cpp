@@ -19,7 +19,7 @@ int main()
     doublereal dtlag = 10e-6;
     doublereal dropletNumber;
     //mesh point number:
-    const size_t meshPointNumber = 800;
+    const size_t meshPointNumber = 10;
     const doublereal domainLength = 0.1;
     //liquid and mixture:
     const doublereal phi_over = 1.0;//overall equivalence ratio
@@ -158,11 +158,10 @@ int main()
     sprayflame.showSolution();
 
     int flowdomain = 1;
-    double ratio = 10.0;
-    double slope = 0.08;
-    double curve = 0.1;
-
-    sprayflame.setRefineCriteria(flowdomain, ratio, slope, curve);
+    // double ratio = 10.0;
+    // double slope = 0.08;
+    // double curve = 0.1;
+    // sprayflame.setRefineCriteria(flowdomain, ratio, slope, curve);
 
     int loglevel = 1;
 
@@ -170,8 +169,9 @@ int main()
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
     gasflow.solveEnergyEqn();
     bool refine_grid = false;
-    
-    sprayflame.solve(loglevel, refine_grid); 
+    // bool do_spray = true;
+    bool do_spray = false;
+    sprayflame.solve(loglevel, refine_grid, do_spray); 
 
     double flameSpeed_mix = sprayflame.value(flowdomain,gasflow.componentIndex("u"),0);
     print("Flame speed with mixture-averaged transport: {} m/s\n",
