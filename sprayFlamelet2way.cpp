@@ -15,11 +15,12 @@ int main()
     /************************************************************/
     //                       Injection
     /************************************************************/
-    bool do_spray = false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
+    bool do_spray = true;//false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
     doublereal parcelDiameter(60e-6); // injection droplet diameter [m]
     doublereal injTemperature(300); // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm); // injection pressure [Pa]
     doublereal dtlag = 10e-6; // Parcel Tracking Time Scale(Evaporation Time Scale)
+    doublereal Mdot_liquid;
     doublereal dropletNumber;
     /************************************************************/
     //                          Mesh
@@ -33,9 +34,11 @@ int main()
     /************************************************************/
     const doublereal temp = 300.0; // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm; // inlet gas flow pressure [atm]
-    doublereal uin = 0.3; // initial guess of inlet velocity [m/s]
     const doublereal phi_over = 1.0;// overall equivalence ratio
-    const doublereal phi = phi_over; // gas flow equivalence ratio
+    const doublereal phi = 1.0; // gas flow equivalence ratio
+    doublereal uin = 0.3; // initial guess of inlet velocity [m/s]
+    doublereal Mdot_air;  // initial mass flux of air flow
+    doublereal Mdot_fuel; // initial mass flux of fuel flow
     /************************************************************/
     //                        Chemistry
     /************************************************************/
@@ -46,7 +49,8 @@ int main()
     size_t nsp = gas.nSpecies(); // number of species
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
-    doublereal fa_stoic = 1.0 / (4.76 * ax); // fuel / air ratio at stoic state  
+    // doublereal fa_stoic = 1.0 / (4.76 * ax); // fuel / air ratio at stoic state
+    doublereal fa_stoic = 0.11232;  
     // Species' mole fraction when the condition is fuel/oxidizer flow:
     x[gas.speciesIndex("C2H5OH")] = 1.0; 
     x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic;
@@ -66,8 +70,8 @@ int main()
     vector_fp yin(nsp);
     gas.getMassFractions(&yin[0]);
 
-    const doublereal Sl = 0.35;//laminar flame speed;
-    const doublereal injMdot = rho_in*Sl*yin[gas.speciesIndex("C2H5OH")]/(1-yin[gas.speciesIndex("C2H5OH")]); 
+    doublereal flamespeed; //laminar flame speed;
+    Mdot_liquid = rho_in*flamespeed*yin[gas.speciesIndex("C2H5OH")]/(1-yin[gas.speciesIndex("C2H5OH")]); 
 
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
     vector_fp yout(nsp);
@@ -82,7 +86,7 @@ int main()
         injTemperature,
         injPressure,
         dtlag,
-        injMdot,
+        Mdot_liquid,
         dropletNumber
     );
 

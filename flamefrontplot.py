@@ -97,8 +97,8 @@ plt.ylabel(r'$T [K]$',fontsize=fonts1)
 # ax2.set_ylabel(r'$Tp/Tp_0$ $(-)$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
-plt.xlim(0.048, 0.05)
-plt.ylim(270, 350)
+# plt.xlim(0.048, 0.05)
+# plt.ylim(270, 350)
 plt.tick_params(labelsize=20)
 
 # handles1, label1 = ax1.get_legend_handles_labels()
