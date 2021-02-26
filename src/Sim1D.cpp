@@ -227,11 +227,12 @@ int Sim1D::newtonSolve(int loglevel)
 void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
 {
     bool convg = false;
-    bool AddSpraySource = false;
+    bool AddSpraySource;
     size_t Nloop = 1;
     do
     {
         if(Nloop == 1){
+            AddSpraySource = false;
             gasflow->if_do_spray_source(AddSpraySource);
         }
         else{
@@ -352,7 +353,7 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
             }
         }
         
-        if(AddSpraySource == true){
+        if(do_spray == true){
             cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
 
             cloud->solve();//solve the ODE of parcel's motion.

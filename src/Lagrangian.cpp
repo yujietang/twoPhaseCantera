@@ -44,12 +44,10 @@ void Lagrangian::setupInjection(
     doublereal Mdotp_inj
 )
 {
-    doublereal NdperSec;//droplet number per second
     doublereal Rhop_inj = fuel.rho(Tp_inj);
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
-    NdperSec = Mdotp_inj/Md_inj;
-    Nd = NdperSec*dtlag;
+    Nd = Mdotp_inj*dtlag/Md_inj;
     // Nd = 5000;
     std::cout << "#\tn particles per parcel\t:\t" << Nd << std::endl;
 }
