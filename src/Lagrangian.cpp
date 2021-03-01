@@ -36,6 +36,7 @@ Lagrangian::Lagrangian(
     std::cout << "droplet number = " << Nd << std::endl;
     std::cout << "parcel's diameter = " << d_inj << std::endl;
     std::cout << "parcel's mass = " << Nd*Md_inj << std::endl;
+    std::cout << "dt_lag = " << dtlag << std::endl;
 }
 
 void Lagrangian::setupInjection(
@@ -48,7 +49,7 @@ void Lagrangian::setupInjection(
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
     Nd = Mdotp_inj*dtlag/Md_inj;
-    // Nd = 5000;
+    Nd = 5000;
     std::cout << "#\tn particles per parcel\t:\t" << Nd << std::endl;
 }
 
@@ -176,10 +177,10 @@ void Lagrangian::evalTransf()
             }
         }
     }
-    for(size_t ii=0;ii<mtf_.size();++ii){
-        std::cout << "htf[ " << ii << " ] = " << htf_[ii] << std::endl;
-        std::cout << "mtf[ " << ii << " ] = " << mtf_[ii] << std::endl;
-    }
+    // for(size_t ii=0;ii<mtf_.size();++ii){
+    //     std::cout << "htf[ " << ii << " ] = " << htf_[ii] << std::endl;
+    //     std::cout << "mtf[ " << ii << " ] = " << mtf_[ii] << std::endl;
+    // }
     // for(int zz=0; zz<mtf_.size();++zz){
     //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
     //     std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
@@ -211,7 +212,7 @@ void Lagrangian::solve()
             break;
         }
 
-        if(up[0]<0.1)
+        if(up[0]<0.01)
         {
             std::cerr << "extinction happens!!!\n\n";
             exit(0);
@@ -221,8 +222,8 @@ void Lagrangian::solve()
 
         //parcel's position:
         xp.push_back(_xp);
-        // std::cout << "Tracking time = " << time + (n-1)*dtlag << std::endl; 
-        // std::cout << "Parcel's position = " << xp.back() << "\n" << std::endl;
+        // std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
+        //          << "Parcel's position = " << xp.back() << "\n" << std::endl;
         
         evalParcelFlow();
 

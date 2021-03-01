@@ -18,14 +18,15 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     doublereal parcelDiameter(50e-6); // injection droplet diameter [m]
     doublereal injTemperature(300); // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm); // injection pressure [Pa]
-    doublereal dtlag = 10e-6; // Parcel Tracking Time Scale(Evaporation Time Scale)
+    doublereal dtlag; // Parcel Tracking Time Scale(Evaporation Time Scale)
     doublereal Mdot_liquid;
     doublereal dropletNumber;
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 1000; // Mesh Point Number
+    const size_t meshPointNumber = 800; // Mesh Point Number
     const doublereal domainLength = 0.1; // Domain Length
+    const doublereal gridSize = domainLength/meshPointNumber; // grid size
     doublereal minGrid = parcelDiameter;// min grid size.
     bool refine_grid = false; // Refined mesh has been turned off
     /************************************************************/
@@ -33,7 +34,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
     const doublereal temp = 300.0; // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm; // inlet gas flow pressure [atm]
-    const doublereal phi = 1.0; // gas flow equivalence ratio
+    const doublereal phi = 1; // gas flow equivalence ratio
     doublereal Mdot_gas;  // initial mass flux of air flow
     /************************************************************/
     //                        Chemistry
@@ -45,7 +46,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     size_t nsp = gas.nSpecies(); // number of species
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
-    doublereal fa_stoic = 1.0 / (4.76 * ax); // fuel / air ratio at stoic state
+    doublereal fa_stoic = 1.0 / (4.77 * ax); // fuel / air mole ratio at stoic state
     // doublereal fa_stoic = 0.11232;  
     // Species' mole fraction when the condition is fuel/oxidizer flow:
     x[gas.speciesIndex("C2H5OH")] = 1.0; 
@@ -69,10 +70,13 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /**********Evaluate the liquid mass flux**********/
     doublereal uf = flamespeed; //laminar flame speed;
     Mdot_gas = rho_in*uf;
-    Mdot_liquid = (phi_over - phi)/(phi + (1.0/0.11232))*Mdot_gas;
+    Mdot_liquid = Mdot_gas*(phi_over - phi)/(phi + (1.0/0.11232));
     std::cout << "The intermediate flame speed is " <<  uf << std::endl; 
     std::cout << "gas mass flux = " << Mdot_gas << std::endl;
     std::cout << "liquid mass flux = " << Mdot_liquid << std::endl;
+    /*************************************************/
+    /*******************Evaluate the tracking time scale******************/
+    dtlag = 0.1*gridSize/uf;
     /*************************************************/
 
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
@@ -157,7 +161,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
     sprayflame.showSolution();
     int flowdomain = 1;
-    int loglevel = 1;
+    int loglevel = 0;
 
     /**********Solve freely propagating flame with spray cloud**********/
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
@@ -190,7 +194,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nospray.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d50.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
@@ -204,37 +208,25 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
 int main()
 {
-    doublereal phi_over;
+    doublereal phi_over = 2.75;
 
-    print("Enter overall Phi : ");
-    std::cin >> phi_over;
+    // print("Enter overall Phi : ");
+    // std::cin >> phi_over;
 
     doublereal flamespeed_Old;
     doublereal flamespeed_New;
     bool do_spray;//false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
     
     double rsd = 1.0;
-    int Nloop = 1;
+    flamespeed_Old = SprayFreeFlame(1.0, phi_over, false);// initial no spray flame speed calculation
+    std::cout << "\n############# no spray flame speed =\t" << flamespeed_Old << std::endl; 
     do{
-        if(Nloop == 1){
-            do_spray = false;
-            flamespeed_Old = 0.3;// pesudo flame speed
-            flamespeed_Old = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
-            std::cout << "FlameSpeed_Old = " << flamespeed_Old << std::endl;
-        }
-        else{
-            do_spray = true;
-            std::cout << "\n########## Add Spray Source ##########\n" << std::endl;
-            flamespeed_New = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
-            
-            std::cout << "FlameSpeed_New = " << flamespeed_New << std::endl;
-
-            rsd = abs(flamespeed_New - flamespeed_Old)/(flamespeed_Old + 1e-14);
-        }
-
-        Nloop++;
+        do_spray = true;
+        flamespeed_New = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
+        rsd = abs(flamespeed_New - flamespeed_Old)/(flamespeed_Old + 1e-14);
+        flamespeed_Old = flamespeed_New;  
     }while(rsd > 1e-4);
 
-    std::cout << "The spray flame speed is \t" << flamespeed_New << std::endl;
+    std::cout << "\nThe spray flame speed is \t" << flamespeed_New << std::endl;
     return 0;
 }

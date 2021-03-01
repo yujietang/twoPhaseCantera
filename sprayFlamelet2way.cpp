@@ -16,7 +16,7 @@ int main()
     //                       Injection
     /************************************************************/
     bool do_spray = true;//false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
-    doublereal parcelDiameter(60e-6); // injection droplet diameter [m]
+    doublereal parcelDiameter(50e-6); // injection droplet diameter [m]
     doublereal injTemperature(300); // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm); // injection pressure [Pa]
     doublereal dtlag = 10e-6; // Parcel Tracking Time Scale(Evaporation Time Scale)
@@ -42,7 +42,7 @@ int main()
     /************************************************************/
     //                        Chemistry
     /************************************************************/
-    IdealGasMix gas("Ethanol_31.cti", "gas");//for single component of ethanol fuel:
+    IdealGasMix gas("Ethanol_31.cti", "gas");//for single component of ethanol fuel
     doublereal C_atoms = 2.0; // C2H5OH
     doublereal H_atoms = 6.0; // C2H5OH
     doublereal O_atoms = 1.0; // C2H5OH
@@ -188,7 +188,7 @@ int main()
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nospray.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d50.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
