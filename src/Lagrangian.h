@@ -87,6 +87,8 @@ class Lagrangian
         //@ n: parcel's index
         doublereal Tddot(size_t n);
 
+        doublereal Qd(size_t n);
+
         //mass transfer rate for one parcel at position xp_n:
         doublereal mtfp(size_t n)
         {
@@ -96,7 +98,8 @@ class Lagrangian
         //heat transfer rate for one parcel at position xp_n:
         doublereal htfp(size_t n) 
         {
-            return Nd*getmp(n)*cp_[n]*Tddot(n);
+            double hv = fuel.cp(Tp[n])*(Tp[n]-Tp[0]);
+            return Nd*Qd(n) + Nd*mddot(n)*hv;
         }
 
         //mass transfer rate at grid points j [kg/s]:
@@ -224,6 +227,10 @@ class Lagrangian
         //feedback from lagrangian field to Eulerian field:
         vector_fp mtf_; //mass transfer
         vector_fp htf_; //heat transfer
+
+        //source term in the last iteration step:
+        vector_fp mtfOld_;
+        vector_fp htfOld_;
 
         //some const:
         const doublereal RR = 8314.0;

@@ -67,17 +67,22 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     vector_fp yin(nsp);
     gas.getMassFractions(&yin[0]);
 
-    /**********Evaluate the liquid mass flux**********/
+    /***************Evaluate the liquid mass flux***************/
     doublereal uf = flamespeed; //laminar flame speed;
     Mdot_gas = rho_in*uf;
-    Mdot_liquid = Mdot_gas*(phi_over - phi)/(phi + (1.0/0.11232));
+    doublereal Mdot_air = Mdot_gas/(0.1113*phi+1);
+    doublereal Mdot_fuel = Mdot_gas - Mdot_air;
+    Mdot_liquid = 0.1113*phi_over*Mdot_air - Mdot_fuel;
+    
     std::cout << "The intermediate flame speed is " <<  uf << std::endl; 
     std::cout << "gas mass flux = " << Mdot_gas << std::endl;
+    std::cout << "fuel vapour mass flux = " << Mdot_fuel << std::endl;
     std::cout << "liquid mass flux = " << Mdot_liquid << std::endl;
-    /*************************************************/
+    /***********************************************************/
+
     /*******************Evaluate the tracking time scale******************/
     dtlag = 0.1*gridSize/uf;
-    /*************************************************/
+    /*********************************************************************/
 
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
     vector_fp yout(nsp);
@@ -161,7 +166,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
     sprayflame.showSolution();
     int flowdomain = 1;
-    int loglevel = 0;
+    int loglevel = 1;
 
     /**********Solve freely propagating flame with spray cloud**********/
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
@@ -194,7 +199,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/d50.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d75_test.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
@@ -219,7 +224,7 @@ int main()
     
     double rsd = 1.0;
     flamespeed_Old = SprayFreeFlame(1.0, phi_over, false);// initial no spray flame speed calculation
-    std::cout << "\n############# no spray flame speed =\t" << flamespeed_Old << std::endl; 
+    std::cout << "\nno spray flame speed =\t" << flamespeed_Old << std::endl; 
     do{
         do_spray = true;
         flamespeed_New = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
@@ -227,6 +232,6 @@ int main()
         flamespeed_Old = flamespeed_New;  
     }while(rsd > 1e-4);
 
-    std::cout << "\nThe spray flame speed is \t" << flamespeed_New << std::endl;
+    std::cout << "\nSpray flame speed is \t" << flamespeed_New << std::endl;
     return 0;
 }

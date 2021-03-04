@@ -437,29 +437,23 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
-
                 //spray 2-way coupled:
                 if(spray_source){
-                    doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                    doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
                     if(k==30){
-                        rsd[index(c_offset_Y + k,j)] -= (Sspef > (-1.0) ? Sspef : 0.0);
+                        doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                        // std::cout << Sspef << std::endl;
+                        // rsd[index(c_offset_Y + k,j)] -= (Sspef > (-1.0) ? Sspef : 0.0);
+                        rsd[index(c_offset_Y + k,j)] -= Sspef;
+
                     }
                     else{
-                        rsd[index(c_offset_Y + k,j)] -= (Sspe > (-1.0) ? Sspe : 0.0);
+                        doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                        // std::cout << Sspe << std::endl;
+                        // rsd[index(c_offset_Y + k,j)] -= (Sspe > (-1.0) ? Sspe : 0.0);
+                        rsd[index(c_offset_Y + k,j)] -= Sspe;
+
                     }
                 }
-                else{
-                    //no spray source
-                }
-                // if(spray_source){
-                //     if(k==30){
-                //         rsd[index(c_offset_Y + k,j)] -= 1.0*cloud->mtf(j)/m_dz[j];
-                //     }
-                // }
-                // else{
-                //     //no spray source
-                // }
 
                 diag[index(c_offset_Y + k, j)] = 1;
             }
@@ -474,34 +468,34 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             //-----------------------------------------------
             if (m_do_energy[j]) {
                 setGas(x,j);
-
                 // heat release term
                 const vector_fp& h_RT = m_thermo->enthalpy_RT_ref();
                 const vector_fp& cp_R = m_thermo->cp_R_ref();
                 double sum = 0.0;
                 double sum2 = 0.0;
+                double hf = 0.0;
                 for (size_t k = 0; k < m_nsp; k++) {
                     double flxk = 0.5*(m_flux(k,j-1) + m_flux(k,j));
                     sum += wdot(k,j)*h_RT[k];
                     sum2 += flxk*cp_R[k]/m_wt[k];
+                    if(k == 30){
+                        hf = cp_R[k]*GasConstant*(T(x, j) - 300.0);
+                    }
                 }
                 sum *= GasConstant * T(x,j);
                 double dtdzj = dTdz(x,j);
                 sum2 *= GasConstant * dtdzj;
-
+                
                 rsd[index(c_offset_T, j)] = - m_cp[j]*rho_u(x,j)*dtdzj
                                             - divHeatFlux(x,j) - sum - sum2;
                 
-                //spray 2-way coupled:
-                if(spray_source){
-                    rsd[index(c_offset_T,j)] -= cloud->htf(j)/m_dz[j];
-                }
-                else{
-                    //no spray source
-                }
-
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
+                //spray 2-way coupled:
+                if(spray_source){
+                    rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
+                    rsd[index(c_offset_T, j)] += (((cloud->mtf(j))*hf)/ (m_rho[j] * m_cp[j]));
+                }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
                 diag[index(c_offset_T, j)] = 1;
             } else {
@@ -999,9 +993,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j-1];
             }
-            else{
-                //no spray source
-            }
             /*****************************************/
         } 
         else if (grid(j) == m_zfixed) {
@@ -1014,9 +1005,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
             }
-            else{
-                //no spray source
-            }
         } 
         else if (grid(j) < m_zfixed) {
             rsd[index(c_offset_U,j)] =
@@ -1026,9 +1014,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
-            }
-            else{
-                //no spray source
             }
             /*****************************************/
 

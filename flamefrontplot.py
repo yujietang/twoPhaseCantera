@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-filename3 = './result/d60.csv'
+filename3 = './result/d75_test.csv'
 filename2 = './result/d50.csv'
 filename1 = './result/d25.csv'
 filename0 = './result/nospray.csv'

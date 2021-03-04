@@ -235,20 +235,21 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
         {
             if(do_spray == false)
             {
+                std::cout << "\n>>>>>>>>>>>>>>>>>>>> Initial Pure Gas Flame <<<<<<<<<<<<<<<<<<<<\n" << std::endl;
                 AddSpraySource = do_spray;
                 gasflow->if_do_spray_source(AddSpraySource);
                 cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
             }
             else{
+                std::cout << "\n>>>>>>>>>>>>>>>>>>>> Initial Spray Flame without Liquid <<<<<<<<<<<<<<<<<<<<\n" << std::endl;
                 AddSpraySource = false;
-                std::cout << "\n#################### Add Spray Source ####################\n" << std::endl;
                 gasflow->if_do_spray_source(AddSpraySource);            
             }
         }
         else
         {
+            std::cout << "\n>>>>>>>>>>>>>>>>>>>> Add Spray Source <<<<<<<<<<<<<<<<<<<<\n" << std::endl;
             AddSpraySource = do_spray;
-            std::cout << "\n#################### Add Spray Source ####################\n" << std::endl;
             gasflow->if_do_spray_source(AddSpraySource);
             cloud->clearGasFlow();//clear gas field in Lagrangian cloud.
         }

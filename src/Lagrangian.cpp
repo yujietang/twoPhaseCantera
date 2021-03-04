@@ -28,7 +28,7 @@ Lagrangian::Lagrangian(
     setupInjection(d_inj, 
                 Tp_inj,
                 Mdotp_inj);
-    std::cout << "====================Parcel Initialization====================" << std::endl;
+    std::cout << "\n====================Parcel Initialization====================" << std::endl;
     std::cout << "injection temperature = " << Tp_inj << std::endl;
     std::cout << "injection pressure = " << p_inj << std::endl;
     std::cout << "liquid mass flow rate = " << Mdotp_inj << std::endl;
@@ -48,9 +48,9 @@ void Lagrangian::setupInjection(
     doublereal Rhop_inj = fuel.rho(Tp_inj);
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
-    Nd = Mdotp_inj*dtlag/Md_inj;
-    Nd = 5000;
-    std::cout << "#\tn particles per parcel\t:\t" << Nd << std::endl;
+    Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
+    // Nd = 5000;
+    std::cout << "#>>>>>> n particles per parcel\t:" << Nd << std::endl;
 }
 
 void Lagrangian::evalGasFlow(const vector_fp& solution)
@@ -88,7 +88,7 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
         }
     }
 
-    /******mass and heat transfer******/
+    /****************mass and heat transfer****************/
     mtf_.resize(z.size(), 0.0);
     htf_.resize(z.size(), 0.0);
     std::cout << "\n========== Check the Eulerian gas field ==========" << std::endl;
@@ -177,10 +177,10 @@ void Lagrangian::evalTransf()
             }
         }
     }
-    // for(size_t ii=0;ii<mtf_.size();++ii){
-    //     std::cout << "htf[ " << ii << " ] = " << htf_[ii] << std::endl;
-    //     std::cout << "mtf[ " << ii << " ] = " << mtf_[ii] << std::endl;
-    // }
+    for(size_t ii=0;ii<mtf_.size();++ii){
+        std::cout << "htf[ " << ii << " ] = " << htf_[ii] << std::endl;
+        // std::cout << "mtf[ " << ii << " ] = " << mtf_[ii]/(0.1/800) << std::endl;
+    }
     // for(int zz=0; zz<mtf_.size();++zz){
     //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
     //     std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
@@ -207,7 +207,7 @@ void Lagrangian::solve()
     {
         // std::cout << "**************** Tracking the parcel [ "
         //             << n << " ] ****************\n" << std::endl;
-        if(dp.back()<small || mp.back()<small)
+        if((dp.back()<small) || (mp.back()<small) || (_xp > gas->zmax()))
         {
             break;
         }
@@ -222,8 +222,8 @@ void Lagrangian::solve()
 
         //parcel's position:
         xp.push_back(_xp);
-        // std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
-        //          << "Parcel's position = " << xp.back() << "\n" << std::endl;
+        std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
+                 << "Parcel's position = " << xp.back() << "\n" << std::endl;
         
         evalParcelFlow();
 
@@ -354,7 +354,7 @@ void Lagrangian::solve()
 void Lagrangian::inject()
 {
     xp.push_back(z[0]);
-    mp.push_back(Md_inj);//TODO: evaluate the parcels' and droplets' quantities
+    mp.push_back(Md_inj);
     Tp.push_back(Tp_inj);
     up.push_back(ug[0]);
     dp.push_back(d_inj);
@@ -366,6 +366,7 @@ void Lagrangian::inject()
     htfp_.push_back(0.0);
 
     Np = 1;
+    // Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
 }
 
 void Lagrangian::clearParcel()
@@ -476,10 +477,10 @@ void Lagrangian::setMpdot(doublereal mdot)
     Mdotp_inj = mdot;
 }
 
-doublereal Lagrangian::mddot(size_t n)
+doublereal Lagrangian::mddot(size_t n) //[kg/s]
 {
     const size_t kf = 30;
-    const doublereal MWf = mw[kf];//TODO:only for ethanol
+    const doublereal MWf = mw[kf];//TODO: multi-component fuel
     //all parameters needed:
     doublereal Ni;
     doublereal kc;
@@ -551,7 +552,6 @@ doublereal Lagrangian::mddot(size_t n)
     
     //Return the mass transfer [kg/s]:
     doublereal massTranfRate = -Pi*Ni*dp[n]*dp[n]*MWf;
-    
 
     return massTranfRate;
 }
@@ -621,7 +621,7 @@ doublereal Lagrangian::mddot_th(size_t n)
     return massTranfRate;
 }
 
-doublereal Lagrangian::Tddot(size_t n)
+doublereal Lagrangian::Tddot(size_t n) //[K/s]
 {
     //For droplet:
     const size_t kf = 30;
@@ -695,6 +695,86 @@ doublereal Lagrangian::Tddot(size_t n)
     doublereal tddot = (mddot_/(md*fuel.cp(Td)))*fuel.Lv(Td) + (Pi*dp[n]*Nu*kappas/(md*fuel.cp(Td)))*(Tinf-Td);
 
     return tddot;
+}
+
+doublereal Lagrangian::Qd(size_t n) //[J/m3*s]
+{
+    //For droplet:
+    const size_t kf = 30;
+    const doublereal MWf = mw[kf];//TODO:only for ethanol
+    doublereal md = mp[n];
+    doublereal Td = Tp[n];
+    //For carrier phase:
+    doublereal pc = p0;
+    doublereal cpG = cp_[n];
+    doublereal Tinf = T_[n];
+    doublereal rhoG = rho_[n];
+    doublereal uG = u_[n];
+    doublereal muG = mu_[n];
+    doublereal kG = kappa_[n];
+    vector_fp Yc(Y_.size(), 0.0);
+    vector_fp YkMW(Y_.size(), 0.0);
+    vector_fp Xc(Yc.size(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Yc[k] = Y_[k][n];
+        YkMW[k] = Yc[k]/mw[k];
+    }
+    double sumYkMW = std::accumulate(YkMW.begin(), YkMW.end(), 0.0);
+    for(size_t k=0; k<Yc.size(); ++k){
+        Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
+    }
+    for(size_t k=0; k<Xc.size(); ++k){
+        Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
+    }
+
+    //surface temperature:
+    doublereal Ts = (2*Td + Tinf)/3.0;
+    const double TRatio = Tinf/Ts; 
+    // saturation pressure for species i [pa]
+    doublereal psat = fuel.pv(Ts);
+
+    //liquid surface fuel molar fraction:
+    // Clausius-Clapeyron relation:
+    doublereal Tboiling = fuel.Tb();
+    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    doublereal Ysf = Xsf*mw[kf];
+
+    const double sqrtW = sqrt(mw[kf]);
+    const double cbrtW = cbrt(mw[kf]);
+
+    doublereal kappas = Ysf*cbrtW*kG;
+
+    doublereal cps = Xsf*cpG;
+
+    // double sumYiSqrtW = Ysf*sqrtW;
+    double sumYiCbrtW = Ysf*cbrtW;
+
+    cps = std::max(cps, small);
+
+    kappas /= sumYiCbrtW;
+    kappas *= TRatio;
+    kappas = std::max(kappas, small);
+
+    doublereal rhos = rhoG*TRatio;
+
+    doublereal mus = muG/TRatio;
+    
+    doublereal Pr = cps*mus/kappas;
+
+    //mass transfer rate:
+    doublereal mddot_ = mddot(n);
+
+    doublereal Red = rhos*std::abs(uG - up[n])*dp[n]/mus;
+    
+    doublereal Nu = 2.0 + 0.6*std::pow(Red, 0.5)*std::pow(Pr, 0.33333);
+
+    doublereal tddot = (mddot_/(md*fuel.cp(Td)))*fuel.Lv(Td) + (Pi*dp[n]*Nu*kappas/(md*fuel.cp(Td)))*(Tinf-Td);
+
+    doublereal hTransfdot = md*fuel.cp(Td)*tddot;
+    
+    doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
+     
+    return qd;
 }
 
 void Lagrangian::write() const
