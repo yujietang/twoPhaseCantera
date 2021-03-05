@@ -437,23 +437,21 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
-                //spray 2-way coupled:
-                if(spray_source){
-                    if(k==30){
-                        doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                        // std::cout << Sspef << std::endl;
-                        // rsd[index(c_offset_Y + k,j)] -= (Sspef > (-1.0) ? Sspef : 0.0);
-                        rsd[index(c_offset_Y + k,j)] -= Sspef;
+                // //spray 2-way coupled:
+                // if(spray_source){
+                //     if(k==30){
+                //         doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                //         std::cout << "Yf source = " << Sspef << std::endl;
+                //         rsd[index(c_offset_Y + k,j)] -= Sspef;
 
-                    }
-                    else{
-                        doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                        // std::cout << Sspe << std::endl;
-                        // rsd[index(c_offset_Y + k,j)] -= (Sspe > (-1.0) ? Sspe : 0.0);
-                        rsd[index(c_offset_Y + k,j)] -= Sspe;
+                //     }
+                //     else{
+                //         doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                //         std::cout << "Y source = " << Sspe << std::endl;
+                //         rsd[index(c_offset_Y + k,j)] -= Sspe;
 
-                    }
-                }
+                //     }
+                // }
 
                 diag[index(c_offset_Y + k, j)] = 1;
             }
@@ -477,10 +475,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 for (size_t k = 0; k < m_nsp; k++) {
                     double flxk = 0.5*(m_flux(k,j-1) + m_flux(k,j));
                     sum += wdot(k,j)*h_RT[k];
-                    sum2 += flxk*cp_R[k]/m_wt[k];
-                    if(k == 30){
-                        hf = cp_R[k]*GasConstant*(T(x, j) - 300.0);
-                    }
+                    sum2 += flxk*cp_R[k]/m_wt[k]; 
                 }
                 sum *= GasConstant * T(x,j);
                 double dtdzj = dTdz(x,j);
@@ -493,6 +488,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 //spray 2-way coupled:
                 if(spray_source){
+                    hf = h_RT[30]*GasConstant*T(x,j);
                     rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
                     rsd[index(c_offset_T, j)] += (((cloud->mtf(j))*hf)/ (m_rho[j] * m_cp[j]));
                 }

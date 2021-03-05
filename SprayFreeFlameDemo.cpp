@@ -218,20 +218,24 @@ int main()
     // print("Enter overall Phi : ");
     // std::cin >> phi_over;
 
-    doublereal flamespeed_Old;
-    doublereal flamespeed_New;
-    bool do_spray;//false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
+    // doublereal flamespeed_Old;
+    // doublereal flamespeed_New;
+    // bool do_spray;//false; // do_spray = 1: two-way couple; do_spray = 0: pure gas;
     
-    double rsd = 1.0;
-    flamespeed_Old = SprayFreeFlame(1.0, phi_over, false);// initial no spray flame speed calculation
-    std::cout << "\nno spray flame speed =\t" << flamespeed_Old << std::endl; 
-    do{
-        do_spray = true;
-        flamespeed_New = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
-        rsd = abs(flamespeed_New - flamespeed_Old)/(flamespeed_Old + 1e-14);
-        flamespeed_Old = flamespeed_New;  
-    }while(rsd > 1e-4);
+    // double rsd = 1.0;
+    // flamespeed_Old = SprayFreeFlame(1.0, phi_over, false);// initial no spray flame speed calculation
+    // std::cout << "\nno spray flame speed =\t" << flamespeed_Old << std::endl; 
+    // do{
+    //     do_spray = true;
+    //     flamespeed_New = SprayFreeFlame(flamespeed_Old, phi_over, do_spray);
+    //     rsd = abs(flamespeed_New - flamespeed_Old)/(flamespeed_Old + 1e-14);
+    //     flamespeed_Old = flamespeed_New;  
+    // }while(rsd > 1e-4);
 
-    std::cout << "\nSpray flame speed is \t" << flamespeed_New << std::endl;
+    doublereal flamespeed;
+
+    flamespeed = SprayFreeFlame(0.34, phi_over, true);
+
+    std::cout << "\nSpray flame speed is \t" << flamespeed << std::endl;
     return 0;
 }

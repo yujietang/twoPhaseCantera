@@ -50,7 +50,7 @@ void Lagrangian::setupInjection(
     Md_inj = Rhop_inj*Vd_inj;
     Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
     // Nd = 5000;
-    std::cout << "#>>>>>> n particles per parcel\t:" << Nd << std::endl;
+    std::cout << ">>>>>> n particles per parcel\t:" << Nd << std::endl;
 }
 
 void Lagrangian::evalGasFlow(const vector_fp& solution)
@@ -72,9 +72,6 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
         if(i%Nvar==0){
             ug.push_back(solution[i]);
         }
-        // else if(i%Nvar==1){
-        //     vg.push_back(solution[i]);
-        // }
         else if(i%Nvar==2){
             Tg.push_back(solution[i]);
         }
@@ -87,22 +84,23 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
             }
         }
     }
+}
 
-    /****************mass and heat transfer****************/
-    mtf_.resize(z.size(), 0.0);
-    htf_.resize(z.size(), 0.0);
-    std::cout << "\n========== Check the Eulerian gas field ==========" << std::endl;
-    std::cout << "z size = " << z.size() << std::endl;
-    std::cout << "rhog size = " << rhog.size() << std::endl;
-    std::cout << "mug size = " << mug.size() << std::endl;
-    std::cout << "cp size = " << cpg.size() << std::endl;
-    std::cout << "kappa size = " << kappag.size() << std::endl;
-    std::cout << "mw size = " << mw.size() << std::endl;
-    std::cout << "species size = " << fuelIndex_.size() << std::endl;
-    std::cout << "Ug size = " << ug.size() << std::endl;
-    std::cout << "Vg size = " << vg.size() << std::endl;
-    std::cout << "Tg size = " << Tg.size() << std::endl;
-    std::cout << "Yg size = " << Yg[0].size() << "\n" << std::endl;
+void Lagrangian::inject()
+{
+    xp.push_back(z[0]);
+    mp.push_back(Md_inj);
+    Tp.push_back(Tp_inj);
+    up.push_back(ug[0]);
+    dp.push_back(d_inj);
+    rhop.push_back(fuel.rho(Tp_inj));
+
+    mtfd_.push_back(0.0);
+    htfp_.push_back(0.0);
+    mtfp_.push_back(0.0);
+    htfp_.push_back(0.0);
+
+    Np = 1;
 }
 
 void Lagrangian::evalParcelFlow()
@@ -134,59 +132,6 @@ void Lagrangian::evalParcelFlow()
     }
 }
 
-void Lagrangian::evalTransf()
-{
-    //resize the vector of quantities transfer:
-    htf_.resize(z.size(), 0.0);
-    mtf_.resize(z.size(), 0.0);//TODO: multi-component case is a 2d vector.
-
-    doublereal leftz;
-    doublereal rightz;
-    doublereal leftLength;
-    doublereal rightLength;
-    doublereal dz;
-    
-    for(size_t iz = 0; iz < z.size()-1; ++iz)
-    {
-        dz = z[iz+1] - z[iz];
-        leftz = z[iz];
-        rightz = z[iz+1];
-        for(size_t ip = 1; ip < Np; ++ip)
-        {
-            if(xp[ip] >= leftz && xp[ip] <= rightz){
-                leftLength = xp[ip] - z[iz];
-                rightLength = z[iz+1] - xp[ip];
-                // mtf_[iz] += mtfp_[ip] 
-                //             + ((mtfp_[ip] - mtfp_[ip-1])/(xp[ip] - xp[ip-1]))*leftLength;
-                // mtf_[iz+1] += mtfp_[ip]
-                //             + ((mtfp_[ip+1] - mtfp_[ip])/(xp[ip+1]-xp[ip]))*rightLength;
-                // htf_[iz] += htfp_[ip] 
-                //             + ((htfp_[ip] - htfp_[ip-1])/(xp[ip] - xp[ip-1]))*leftLength;
-                // htf_[iz+1] += htfp_[ip]
-                //             + ((htfp_[ip+1] - htfp_[ip])/(xp[ip+1]-xp[ip]))*rightLength;
-                mtf_[iz] += mtfp_[ip]*(rightLength/dz);
-                mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
-                htf_[iz] += htfp_[ip]*(rightLength/dz); 
-                htf_[iz+1] += htfp_[ip]*(leftLength/dz);
-            }
-            else{
-                mtf_[iz] += 0.0;
-                mtf_[iz+1] += 0.0;
-                htf_[iz] += 0.0;
-                htf_[iz+1] += 0.0;
-            }
-        }
-    }
-    for(size_t ii=0;ii<mtf_.size();++ii){
-        std::cout << "htf[ " << ii << " ] = " << htf_[ii] << std::endl;
-        // std::cout << "mtf[ " << ii << " ] = " << mtf_[ii]/(0.1/800) << std::endl;
-    }
-    // for(int zz=0; zz<mtf_.size();++zz){
-    //     std::cout << "mtf[" << zz << "] = " << mtf_[zz] << std::endl; 
-    //     std::cout << "htf[" << zz << "] = " << htf_[zz] << std::endl; 
-    // }
-}
-
 void Lagrangian::solve()
 {
     clearParcel();
@@ -199,10 +144,9 @@ void Lagrangian::solve()
     doublereal _rhog = rhog[0];
     doublereal _mug = mug[0];
     doublereal _Red;
-    //tracking step n:
-    size_t marchingStep = 2e+5;
 
-    // size_t marchingStep = 2e+4;
+    size_t marchingStep = 2e+5;    //tracking step n:
+
     for(size_t n=1; n<marchingStep; ++n)
     {
         // std::cout << "**************** Tracking the parcel [ "
@@ -222,8 +166,8 @@ void Lagrangian::solve()
 
         //parcel's position:
         xp.push_back(_xp);
-        std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
-                 << "Parcel's position = " << xp.back() << "\n" << std::endl;
+        // std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
+        //          << "Parcel's position = " << xp.back() << "\n" << std::endl;
         
         evalParcelFlow();
 
@@ -248,8 +192,8 @@ void Lagrangian::solve()
             pow(6*mp[n]/(Pi*rhop[n]+small), 0.33333)
         );
 
-        //parcel's velocity
-        //Yuan & Chen (1976):
+        // //parcel's velocity
+        // //Yuan & Chen (1976):
         // std::cout << "LOCAL Parcel VELOCITY AT x_p = " 
         //         << xp[n-1] 
         //         << " = "
@@ -258,11 +202,6 @@ void Lagrangian::solve()
         _rhog = intpfield(rhog, z, xp[n-1]);
         _mug = intpfield(mug, z, xp[n-1]);
         _Red = _rhog*std::abs(_ug - up[n-1])*dp[n-1]/(_mug+small);
-        // if(_ug == up[n-1]){
-        //     std::cout << "\n######## Warning: No slip velocity! ########\n" << std::endl;
-        // }
-        // std::cout << "Re_d is :" << _Red << "\n" << std::endl;
-        // std::cout << "Drag coeff. is : " << Cd(_Red) << "\n" << std::endl;
         up.push_back(
             up[n-1] + dtlag*0.75*Cd(_Red)*_rhog*std::abs(_ug-up[n-1])*(_ug-up[n-1])/(dp[n-1]*rhop[n-1]+small)
             // _ug //no drag force
@@ -290,83 +229,50 @@ void Lagrangian::solve()
         ++Np;
 
         if(Np != mp.size()){
-            std::cerr << "###### Error: parcel's number is not equal to Np! ######\n\n";
+            std::cerr << "\nError: parcel's number is not equal to Np!\n";
             exit(0);
         }
-        // std::cout << "******************** End Tracking ********************"
-        //         << "\n" << std::endl;
     }
-    // for(size_t ip = 0; ip < mp.size(); ++ip)
-    // {
-    //     std::cout << "\n******************| Parcel [" 
-    //                 << ip
-    //                 << "]: xp = "
-    //                 << xp[ip] << " |******************\n"
-    //                 << std::endl;
-    //     std::cout << "\n****** Parcel [" 
-    //                 << ip
-    //                 << "]: MASS = "
-    //                 << mp[ip] << "\n"
-    //                 << std::endl;
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: DIAMETER = "
-    //                 << dp[ip] << "\n"
-    //                 << std::endl;
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: rho = "
-    //                 << rhop[ip] << "\n"
-    //                 << std::endl;             
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: Tp = "
-    //                 << Tp[ip] << "\n"
-    //                 << std::endl;        
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: up = "
-    //                 << up[ip] << "\n"
-    //                 << std::endl;  
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: mtf = "
-    //                 << mtfp_[ip] << "\n"
-    //                 << std::endl;         
-    //     std::cout << "****** Parcel [" 
-    //                 << ip
-    //                 << "]: htf = "
-    //                 << htfp_[ip] << "\n"
-    //                 << std::endl;         
-    //     std::cout << "****** Droplet [" 
-    //                 << ip
-    //                 << "]: mtf = "
-    //                 << mtfd_[ip] << "\n"
-    //                 << std::endl;         
-    //     std::cout << "****** Droplet [" 
-    //                 << ip
-    //                 << "]: htf = "
-    //                 << htfd_[ip] << "\n"
-    //                 << std::endl;     
-    // }
 }
 
-void Lagrangian::inject()
+void Lagrangian::evalTransf()
 {
-    xp.push_back(z[0]);
-    mp.push_back(Md_inj);
-    Tp.push_back(Tp_inj);
-    up.push_back(ug[0]);
-    dp.push_back(d_inj);
-    rhop.push_back(fuel.rho(Tp_inj));
+    //resize the vector of quantities transfer:
+    htf_.resize(z.size(), 0.0);
+    mtf_.resize(z.size(), 0.0);//TODO: multi-component case is a 2d vector.
 
-    mtfd_.push_back(0.0);
-    htfp_.push_back(0.0);
-    mtfp_.push_back(0.0);
-    htfp_.push_back(0.0);
-
-    Np = 1;
-    // Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
+    doublereal leftz;
+    doublereal rightz;
+    doublereal leftLength;
+    doublereal rightLength;
+    doublereal dz;
+    
+    for(size_t iz = 0; iz < z.size()-1; ++iz)
+    {
+        dz = z[iz+1] - z[iz];
+        leftz = z[iz];
+        rightz = z[iz+1];
+        for(size_t ip = 1; ip < Np; ++ip)
+        {
+            if(xp[ip] >= leftz && xp[ip] <= rightz){
+                leftLength = xp[ip] - z[iz];
+                rightLength = z[iz+1] - xp[ip];
+                mtf_[iz] += mtfp_[ip]*(rightLength/dz);
+                mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
+                htf_[iz] += htfp_[ip]*(rightLength/dz); 
+                htf_[iz+1] += htfp_[ip]*(leftLength/dz);
+            }
+            else{
+                mtf_[iz] += 0.0;
+                mtf_[iz+1] += 0.0;
+                htf_[iz] += 0.0;
+                htf_[iz+1] += 0.0;
+            }
+        }
+    }
+    for(size_t ii=0;ii<mtf_.size();++ii){
+        std::cout << "htf_[ " << ii << " ] = " << htf_[ii] << std::endl;
+    }
 }
 
 void Lagrangian::clearParcel()
@@ -385,36 +291,42 @@ void Lagrangian::clearParcel()
     std::cout << "====== Parcels has been cleared up! ======\n"<< std::endl;
 }
 
-void Lagrangian::clearGasFlow()
+void Lagrangian::clearGasFlow(bool do_spray)
 {
-    std::cout << "\n================ Starting Clear Gas Flow ================\n"
-            << std::endl;
-    std::cout << "z size = " << z.size() << std::endl;
-    //clear gas flow:
-    z.clear();
-    ug.clear();
-    mug.clear();
-    rhog.clear();
-    Tg.clear();
-    cpg.clear();
-    kappag.clear();
-    mw.clear();
-    Yg.resize(gas->nsp());
-    for(size_t k=0; k<Yg.size(); ++k){
-        Yg[k].clear();
-    }   
+    if(do_spray == true){
+        std::cout << "\n================ Starting Clear Gas Flow ================\n"
+                << std::endl;
+        //clear gas flow:
+        z.clear();
+        ug.clear();
+        mug.clear();
+        rhog.clear();
+        Tg.clear();
+        cpg.clear();
+        kappag.clear();
+        mw.clear();
+        Yg.resize(gas->nsp());
+        for(size_t k=0; k<Yg.size(); ++k){
+            Yg[k].clear();
+        }
+        //record mtf_ and htf_:
+        mtfOld_.resize(gas->grid().size(), 0.0);
+        htfOld_.resize(gas->grid().size(), 0.0);
+        for(size_t ii = 0; ii < mtf_.size(); ++ii){
+            mtfOld_[ii] = mtf_[ii];
+            htfOld_[ii] = htf_[ii];
+        }
 
-    mtf_.clear();
-    htf_.clear();
-    std::cout << "\n====== Gas Flow has been cleared up! ======"
-            << "\n" << std::endl;
+        std::cout << "\n=========== Gas Flow has been cleared up! ===========\n" 
+            << std::endl;
+    }
+    else{
+        mtfOld_.resize(gas->grid().size(), 0.0);
+        htfOld_.resize(gas->grid().size(), 0.0);
+    }
 }
 
-doublereal Lagrangian::intpfield(
-    vector_fp& field,
-    vector_fp& grid,
-    doublereal xp
-) const
+doublereal Lagrangian::intpfield(vector_fp& field, vector_fp& grid, doublereal xp) const
 {
     if(xp < gas->zmin()){
         std::cerr << "ERROR: Parcel does not reach the inlet!" << std::endl;
@@ -795,5 +707,4 @@ void Lagrangian::write() const
         }
     }
 }
-
 }

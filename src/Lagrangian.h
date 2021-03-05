@@ -53,7 +53,7 @@ class Lagrangian
         void clearParcel();
         
         //clear the field of gas-phase information in the last step:
-        void clearGasFlow();
+        void clearGasFlow(bool do_spray);
         
         //interpolate data from Eulerian field to parcel's position:
         //@ field: Eulerian field i.e. u, T, rho
@@ -96,7 +96,7 @@ class Lagrangian
         }
 
         //heat transfer rate for one parcel at position xp_n:
-        doublereal htfp(size_t n) 
+        doublereal htfp(size_t n)
         {
             double hv = fuel.cp(Tp[n])*(Tp[n]-Tp[0]);
             return Nd*Qd(n) + Nd*mddot(n)*hv;
@@ -105,12 +105,12 @@ class Lagrangian
         //mass transfer rate at grid points j [kg/s]:
         doublereal mtf(size_t j) const
         {
-            return mtf_[j];
+            return aa*mtf_[j] + (1-aa)*mtfOld_[j];
         }
 
         doublereal htf(size_t j) const
         {
-            return htf_[j];
+            return aa*htf_[j] + (1-aa)*htfOld_[j];
         }
 
         void setFuel(const std::vector<std::string>& fuelName)
@@ -234,6 +234,7 @@ class Lagrangian
 
         //some const:
         const doublereal RR = 8314.0;
+        const doublereal aa = 0.1; //relaxation factor
 };
 }
 
