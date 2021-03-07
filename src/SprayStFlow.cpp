@@ -484,12 +484,12 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
-                //spray 2-way coupled:
-                if(spray_source){
-                    rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
-                    rsd[index(c_offset_T, j)] += (((cloud->mtf(j)/m_dz[j])*hf) / (m_rho[j] * m_cp[j]));
-                    std::cout << "@ " << j << "\t" << (cloud->mtf(j)*hf - cloud->htf(j))/ m_dz[j] << std::endl;
-                }
+                // //spray 2-way coupled:
+                // if(spray_source){
+                //     rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
+                //     rsd[index(c_offset_T, j)] += (((cloud->mtf(j)/m_dz[j])*hf) / (m_rho[j] * m_cp[j]));
+                //     std::cout << "@ " << j << "\t" << (cloud->mtf(j)*hf - cloud->htf(j))/ m_dz[j] << std::endl;
+                // }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
                 diag[index(c_offset_T, j)] = 1;
             } else {

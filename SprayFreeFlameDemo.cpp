@@ -34,7 +34,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
     const doublereal temp = 300.0; // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm; // inlet gas flow pressure [atm]
-    const doublereal phi = 0.8; // gas flow equivalence ratio
+    const doublereal phi = 1.0; // gas flow equivalence ratio
     doublereal Mdot_gas;  // initial mass flux of air flow
     /************************************************************/
     //                        Chemistry
@@ -213,7 +213,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
 int main()
 {
-    doublereal phi_over = 1.5;
+    doublereal phi_over = 2.75;
 
     // print("Enter overall Phi : ");
     // std::cin >> phi_over;
