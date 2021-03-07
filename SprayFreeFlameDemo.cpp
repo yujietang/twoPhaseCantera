@@ -34,7 +34,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
     const doublereal temp = 300.0; // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm; // inlet gas flow pressure [atm]
-    const doublereal phi = 1; // gas flow equivalence ratio
+    const doublereal phi = 0.8; // gas flow equivalence ratio
     doublereal Mdot_gas;  // initial mass flux of air flow
     /************************************************************/
     //                        Chemistry
@@ -81,7 +81,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /***********************************************************/
 
     /*******************Evaluate the tracking time scale******************/
-    dtlag = 0.1*gridSize/uf;
+    dtlag = 0.025*gridSize/uf;
     /*********************************************************************/
 
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
@@ -199,7 +199,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/d75_test.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d50_test.csv", std::ios::trunc);
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
@@ -213,7 +213,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
 int main()
 {
-    doublereal phi_over = 2.75;
+    doublereal phi_over = 1.5;
 
     // print("Enter overall Phi : ");
     // std::cin >> phi_over;

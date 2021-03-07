@@ -235,8 +235,18 @@ void Lagrangian::solve()
     }
 }
 
+void Lagrangian::recordOldSrc()
+{
+    for(size_t ii = 0; ii < mtf_.size(); ++ii){
+        mtfOld_[ii] = mtf(ii);
+        htfOld_[ii] = htf(ii);
+    }
+}
+
 void Lagrangian::evalTransf()
 {
+    this->recordOldSrc();
+    
     //resize the vector of quantities transfer:
     htf_.resize(z.size(), 0.0);
     mtf_.resize(z.size(), 0.0);//TODO: multi-component case is a 2d vector.
@@ -252,15 +262,27 @@ void Lagrangian::evalTransf()
         dz = z[iz+1] - z[iz];
         leftz = z[iz];
         rightz = z[iz+1];
-        for(size_t ip = 1; ip < Np; ++ip)
+        for(size_t ip = 1; ip < Np-1; ++ip)
         {
-            if(xp[ip] >= leftz && xp[ip] <= rightz){
+            if(xp[ip-1] >= leftz && xp[ip] >= leftz && xp[ip] <= rightz && xp[ip+1]<=rightz){
                 leftLength = xp[ip] - z[iz];
                 rightLength = z[iz+1] - xp[ip];
                 mtf_[iz] += mtfp_[ip]*(rightLength/dz);
                 mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
                 htf_[iz] += htfp_[ip]*(rightLength/dz); 
                 htf_[iz+1] += htfp_[ip]*(leftLength/dz);
+            }
+            else if(xp[ip-1] < leftz && xp[ip] > leftz){
+                rightLength = xp[ip] - leftz;
+                mtf_[iz] += mtfp_[ip]*(rightLength/(xp[ip] - xp[ip-1]));
+                // mtf_[iz+1] += mtfp_[ip]*((xp[ip]-leftz)/dz);
+                htf_[iz] += htfp_[ip]*(rightLength/(xp[ip] - xp[ip-1]));
+                // mtf_[iz+1] += htfp_[ip]*((xp[ip]-leftz)/dz); 
+            }
+            else if(xp[ip] < rightz && xp[ip+1] > rightz){
+                leftLength = rightz - xp[ip];
+                mtf_[iz] += mtfp_[ip]*(leftLength/(xp[ip+1] - xp[ip]));
+                htf_[iz] += htfp_[ip]*(leftLength/(xp[ip+1] - xp[ip])); 
             }
             else{
                 mtf_[iz] += 0.0;
@@ -270,9 +292,11 @@ void Lagrangian::evalTransf()
             }
         }
     }
-    for(size_t ii=0;ii<mtf_.size();++ii){
-        std::cout << "htf_[ " << ii << " ] = " << htf_[ii] << std::endl;
-    }
+
+    // for(size_t ii=0;ii<mtf_.size();++ii){
+        // std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
+        //           << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
+    // }
 }
 
 void Lagrangian::clearParcel()
@@ -294,8 +318,6 @@ void Lagrangian::clearParcel()
 void Lagrangian::clearGasFlow(bool do_spray)
 {
     if(do_spray == true){
-        std::cout << "\n================ Starting Clear Gas Flow ================\n"
-                << std::endl;
         //clear gas flow:
         z.clear();
         ug.clear();
@@ -309,16 +331,13 @@ void Lagrangian::clearGasFlow(bool do_spray)
         for(size_t k=0; k<Yg.size(); ++k){
             Yg[k].clear();
         }
-        //record mtf_ and htf_:
-        mtfOld_.resize(gas->grid().size(), 0.0);
-        htfOld_.resize(gas->grid().size(), 0.0);
-        for(size_t ii = 0; ii < mtf_.size(); ++ii){
-            mtfOld_[ii] = mtf_[ii];
-            htfOld_[ii] = htf_[ii];
-        }
 
-        std::cout << "\n=========== Gas Flow has been cleared up! ===========\n" 
-            << std::endl;
+        // std::cout << "\n>>>>>>>>>>> After Clear Gas FLow <<<<<<<<<<<" << std::endl;
+        // for(size_t ii=0;ii<mtf_.size();++ii){
+        //     std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
+        //             << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
+        // }
+            
     }
     else{
         mtfOld_.resize(gas->grid().size(), 0.0);
@@ -373,7 +392,7 @@ bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
         rsd = abs(Tnew - Told)/(Told + small);
 
         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-        if(rsd < 1e-2){
+        if(rsd < 5e-3){
             std::cout << "\nResidual Checking has been done!\n" << std::endl;
             return true;
         }
@@ -680,7 +699,8 @@ doublereal Lagrangian::Qd(size_t n) //[J/m3*s]
     
     doublereal Nu = 2.0 + 0.6*std::pow(Red, 0.5)*std::pow(Pr, 0.33333);
 
-    doublereal tddot = (mddot_/(md*fuel.cp(Td)))*fuel.Lv(Td) + (Pi*dp[n]*Nu*kappas/(md*fuel.cp(Td)))*(Tinf-Td);
+    doublereal tddot = (mddot_/(md*fuel.cp(Td)))*fuel.Lv(Td) 
+                        + (Pi*dp[n]*Nu*kappas/(md*fuel.cp(Td)))*(Tinf-Td);
 
     doublereal hTransfdot = md*fuel.cp(Td)*tddot;
     

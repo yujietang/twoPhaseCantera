@@ -54,7 +54,9 @@ class Lagrangian
         
         //clear the field of gas-phase information in the last step:
         void clearGasFlow(bool do_spray);
-        
+
+        void recordOldSrc();
+
         //interpolate data from Eulerian field to parcel's position:
         //@ field: Eulerian field i.e. u, T, rho
         //@ grid: Eulerian grid
@@ -98,7 +100,7 @@ class Lagrangian
         //heat transfer rate for one parcel at position xp_n:
         doublereal htfp(size_t n)
         {
-            double hv = fuel.cp(Tp[n])*(Tp[n]-Tp[0]);
+            double hv = cp_[n]*(Tp[n]-Tp[0]);
             return Nd*Qd(n) + Nd*mddot(n)*hv;
         }
 

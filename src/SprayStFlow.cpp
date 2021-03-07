@@ -437,21 +437,17 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
-                // //spray 2-way coupled:
-                // if(spray_source){
-                //     if(k==30){
-                //         doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                //         std::cout << "Yf source = " << Sspef << std::endl;
-                //         rsd[index(c_offset_Y + k,j)] -= Sspef;
-
-                //     }
-                //     else{
-                //         doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                //         std::cout << "Y source = " << Sspe << std::endl;
-                //         rsd[index(c_offset_Y + k,j)] -= Sspe;
-
-                //     }
-                // }
+                //spray 2-way coupled:
+                if(spray_source){
+                    if(k==30){
+                        doublereal Sspef = (1.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                        rsd[index(c_offset_Y + k,j)] -= Sspef;
+                    }
+                    else{
+                        doublereal Sspe = (0.0-Y(x,k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
+                        rsd[index(c_offset_Y + k,j)] -= Sspe;
+                    }
+                }
 
                 diag[index(c_offset_Y + k, j)] = 1;
             }
@@ -473,6 +469,8 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 double sum2 = 0.0;
                 double hf = 0.0;
                 for (size_t k = 0; k < m_nsp; k++) {
+                    // hf = h_RT[k]*GasConstant*T(x,j) + m_cp[j]*(T(x,j) - 300.0);
+                    hf = m_cp[j]*(T(x,j) - 300.0);
                     double flxk = 0.5*(m_flux(k,j-1) + m_flux(k,j));
                     sum += wdot(k,j)*h_RT[k];
                     sum2 += flxk*cp_R[k]/m_wt[k]; 
@@ -488,9 +486,9 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 //spray 2-way coupled:
                 if(spray_source){
-                    hf = h_RT[30]*GasConstant*T(x,j);
                     rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
-                    rsd[index(c_offset_T, j)] += (((cloud->mtf(j))*hf)/ (m_rho[j] * m_cp[j]));
+                    rsd[index(c_offset_T, j)] += (((cloud->mtf(j)/m_dz[j])*hf) / (m_rho[j] * m_cp[j]));
+                    std::cout << "@ " << j << "\t" << (cloud->mtf(j)*hf - cloud->htf(j))/ m_dz[j] << std::endl;
                 }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
                 diag[index(c_offset_T, j)] = 1;
@@ -988,6 +986,7 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j-1];
+                // rsd[index(c_offset_U,j)] -= (cloud->mtf(j) - cloud->mtf(j-1))/m_dz[j-1];
             }
             /*****************************************/
         } 
@@ -998,9 +997,9 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
                 rsd[index(c_offset_U,j)] = (rho_u(x,j)
                                             - m_rho[0]*0.3);
             }
-            if(spray_source){
-                rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
-            }
+            // if(spray_source){
+            //     rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
+            // }
         } 
         else if (grid(j) < m_zfixed) {
             rsd[index(c_offset_U,j)] =
@@ -1010,6 +1009,7 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
+                // rsd[index(c_offset_U,j)] -= (cloud->mtf(j+1) - cloud->mtf(j))/m_dz[j];
             }
             /*****************************************/
 
