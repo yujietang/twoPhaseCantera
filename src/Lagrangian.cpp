@@ -712,7 +712,8 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
     
     //vapour enthalpy at the liquid surface:
-    doublereal hv = cps*(Tp[n] - Tp[0]) + Ysf*hf_RT[kf]*GasConstant*Ts;
+    // doublereal hv = cps*(Tp[n] - Tp[0]) + Ysf*hf_RT[kf]*GasConstant*Ts;
+    doublereal hv = cps*(Tp[n] - Tp[0]);
 
     doublereal Hv = mddot_*hv;
      
