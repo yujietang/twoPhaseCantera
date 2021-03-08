@@ -7,6 +7,7 @@
 namespace Cantera
 {
 Lagrangian::Lagrangian(
+   IdealGasPhase* ph,
    const doublereal parcelDiameter,
    const doublereal TInjection,
    const doublereal pinjection,
@@ -14,6 +15,7 @@ Lagrangian::Lagrangian(
    const doublereal Mdotinjection,
    const size_t dropletNumber
 ) :
+    Thermo(0),
     fuel(pinjection),
     d_inj(parcelDiameter),
     Tp_inj(TInjection),
@@ -25,6 +27,7 @@ Lagrangian::Lagrangian(
     gas(0),
     small(1.0e-13)
 {
+    Thermo = ph;
     setupInjection(d_inj, 
                 Tp_inj,
                 Mdotp_inj);
@@ -628,11 +631,12 @@ doublereal Lagrangian::Tddot(size_t n) //[K/s]
     return tddot;
 }
 
-doublereal Lagrangian::Qd(size_t n) //[J/m3*s]
+doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
 {
     //For droplet:
     const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO:only for ethanol
+    const vector_fp& hf_RT = Thermo->enthalpy_RT_ref();//
     doublereal md = mp[n];
     doublereal Td = Tp[n];
     //For carrier phase:
@@ -704,9 +708,15 @@ doublereal Lagrangian::Qd(size_t n) //[J/m3*s]
 
     doublereal hTransfdot = md*fuel.cp(Td)*tddot;
     
+    //heat transfer rate from gas to liquid(convection heat transfer):
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
+    
+    //vapour enthalpy at the liquid surface:
+    doublereal hv = cps*(Tp[n] - Tp[0]) + Ysf*hf_RT[kf]*GasConstant*Ts;
+
+    doublereal Hv = mddot_*hv;
      
-    return qd;
+    return qd + Hv;
 }
 
 void Lagrangian::write() const

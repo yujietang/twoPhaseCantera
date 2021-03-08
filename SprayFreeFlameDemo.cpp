@@ -93,6 +93,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
     /**********Lagrangian Cloud**********/
     Lagrangian cloud(
+        &gas,
         parcelDiameter,
         injTemperature,
         injPressure,

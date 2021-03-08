@@ -8,6 +8,7 @@
 #include <fstream>
 #include <string>
 #include "cantera/base/global.h"
+#include "cantera/thermo/IdealGasPhase.h"
 #include "SprayStFlow.h"
 #include "Liquid.h"
 #include "AllSpecies.h"
@@ -19,7 +20,8 @@ class StFlow;
 class Lagrangian
 {
     public:
-        Lagrangian(const doublereal parcelDiameter,
+        Lagrangian(IdealGasPhase* ph,
+                   const doublereal parcelDiameter,
                    const doublereal TInjection,
                    const doublereal pinjection,
                    const doublereal lagrangianTimeStep,
@@ -89,7 +91,7 @@ class Lagrangian
         //@ n: parcel's index
         doublereal Tddot(size_t n);
 
-        doublereal Qd(size_t n);
+        doublereal hTransRate(size_t n);
 
         //mass transfer rate for one parcel at position xp_n:
         doublereal mtfp(size_t n)
@@ -100,8 +102,7 @@ class Lagrangian
         //heat transfer rate for one parcel at position xp_n:
         doublereal htfp(size_t n)
         {
-            double hv = cp_[n]*(Tp[n]-Tp[0]);
-            return Nd*Qd(n) + Nd*mddot(n)*hv;
+            return Nd*hTransRate(n);
         }
 
         //mass transfer rate at grid points j [kg/s]:
@@ -169,6 +170,7 @@ class Lagrangian
     
     private:
         StFlow* gas;
+        IdealGasPhase* Thermo;
         Ethanol fuel;
 
         doublereal small;
