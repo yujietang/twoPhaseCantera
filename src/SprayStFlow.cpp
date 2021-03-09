@@ -467,10 +467,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 const vector_fp& cp_R = m_thermo->cp_R_ref();
                 double sum = 0.0;
                 double sum2 = 0.0;
-                // double hf = 0.0;
-                // hf += Y(x,30,j)*GasConstant*cp_R[30]*(T(x,j)-300);
                 for (size_t k = 0; k < m_nsp; k++) {
-                    // hf += (Y(x,k,j)*GasConstant*cp_R[k]*(T(x,j)-300));
                     double flxk = 0.5*(m_flux(k,j-1) + m_flux(k,j));
                     sum += wdot(k,j)*h_RT[k];
                     sum2 += flxk*cp_R[k]/m_wt[k]; 
@@ -486,9 +483,8 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 //spray 2-way coupled:
                 if(spray_source){
-                    rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
-                    // rsd[index(c_offset_T, j)] += (((cloud->mtf(j)/m_dz[j])*hf) / (m_rho[j] * m_cp[j]));
-                    // std::cout << "@ " << j << "\t" << (cloud->mtf(j)*hf - cloud->htf(j))/ m_dz[j] << std::endl;
+                    rsd[index(c_offset_T, j)] += ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
+                    // std::cout << "@" << j << "\t" << cloud -> htf(j)/m_dz[j] << std::endl;  
                 }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
                 diag[index(c_offset_T, j)] = 1;

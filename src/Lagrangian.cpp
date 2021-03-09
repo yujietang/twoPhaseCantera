@@ -395,7 +395,7 @@ bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
         rsd = abs(Tnew - Told)/(Told + small);
 
         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-        if(rsd < 1e-2){
+        if(rsd < 2e-3){
             std::cout << "\nResidual Checking has been done!\n" << std::endl;
             return true;
         }
@@ -710,15 +710,16 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     
     //heat transfer rate from gas to liquid(convection heat transfer):
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
-    
-    //vapour enthalpy at the liquid surface:
-    // doublereal hf = cps*(Tp[n] - Tp[0]);
-    doublereal hf = cps*(Tinf - Ts);
 
+    doublereal Tls = ((Ts>fuel.Tb()) ? fuel.Tb() : Ts);
+    //vapour enthalpy:
+    doublereal hv = cps*(Tls - Td);
+    doublereal Hv = mddot_*hv;
+    //fuel enthalpy:
+    doublereal hf = cpG*(Tinf - Tls);
     doublereal Hf = mddot_*hf;
      
-    return qd - Hf;
-    // return qd;
+    return qd - Hv - Hf;
 }
 
 void Lagrangian::write() const
