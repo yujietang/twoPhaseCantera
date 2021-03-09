@@ -297,8 +297,8 @@ void Lagrangian::evalTransf()
     }
 
     // for(size_t ii=0;ii<mtf_.size();++ii){
-        // std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
-        //           << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
+    //     std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
+    //               << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
     // }
 }
 
@@ -395,7 +395,7 @@ bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
         rsd = abs(Tnew - Told)/(Told + small);
 
         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-        if(rsd < 5e-3){
+        if(rsd < 1e-2){
             std::cout << "\nResidual Checking has been done!\n" << std::endl;
             return true;
         }
@@ -712,12 +712,13 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
     
     //vapour enthalpy at the liquid surface:
-    // doublereal hv = cps*(Tp[n] - Tp[0]) + Ysf*hf_RT[kf]*GasConstant*Ts;
-    doublereal hv = cps*(Tp[n] - Tp[0]);
+    // doublereal hf = cps*(Tp[n] - Tp[0]);
+    doublereal hf = cps*(Tinf - Ts);
 
-    doublereal Hv = mddot_*hv;
+    doublereal Hf = mddot_*hf;
      
-    return qd + Hv;
+    return qd - Hf;
+    // return qd;
 }
 
 void Lagrangian::write() const

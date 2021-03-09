@@ -10,7 +10,7 @@
 using namespace Cantera;
 using fmt::print;
 
-doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_spray)
+doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spray)
 {
     /************************************************************/
     //                       Injection
@@ -18,14 +18,15 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     doublereal parcelDiameter(50e-6); // injection droplet diameter [m]
     doublereal injTemperature(300); // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm); // injection pressure [Pa]
+    const doublereal CoLag = 0.1; //Lagrangian Co number
     doublereal dtlag; // Parcel Tracking Time Scale(Evaporation Time Scale)
     doublereal Mdot_liquid;
     doublereal dropletNumber;
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 800; // Mesh Point Number
-    const doublereal domainLength = 0.1; // Domain Length
+    const size_t meshPointNumber = 300; // Mesh Point Number
+    const doublereal domainLength = 0.008; // Domain Length
     const doublereal gridSize = domainLength/meshPointNumber; // grid size
     doublereal minGrid = parcelDiameter;// min grid size.
     bool refine_grid = false; // Refined mesh has been turned off
@@ -34,7 +35,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
     const doublereal temp = 300.0; // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm; // inlet gas flow pressure [atm]
-    const doublereal phi = 1.0; // gas flow equivalence ratio
+    const doublereal phi = 0.9; // gas flow equivalence ratio
     doublereal Mdot_gas;  // initial mass flux of air flow
     /************************************************************/
     //                        Chemistry
@@ -68,7 +69,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     gas.getMassFractions(&yin[0]);
 
     /***************Evaluate the liquid mass flux***************/
-    doublereal uf = flamespeed; //laminar flame speed;
+    doublereal uf = maxspeed; //laminar flame speed;
     Mdot_gas = rho_in*uf;
     doublereal Mdot_air = Mdot_gas/(0.1113*phi+1);
     doublereal Mdot_fuel = Mdot_gas - Mdot_air;
@@ -81,7 +82,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /***********************************************************/
 
     /*******************Evaluate the tracking time scale******************/
-    dtlag = 0.025*gridSize/uf;
+    dtlag = CoLag*gridSize/uf;
     /*********************************************************************/
 
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
@@ -200,7 +201,8 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/d50_test.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d50.csv", std::ios::trunc);
+
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
@@ -214,7 +216,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
 int main()
 {
-    doublereal phi_over = 2.75;
+    doublereal phi_over = 1.0;
 
     // print("Enter overall Phi : ");
     // std::cin >> phi_over;
@@ -235,7 +237,7 @@ int main()
 
     doublereal flamespeed;
 
-    flamespeed = SprayFreeFlame(0.34, phi_over, true);
+    flamespeed = SprayFreeFlame(2.2, phi_over, true);
 
     std::cout << "\nSpray flame speed is \t" << flamespeed << std::endl;
     return 0;
