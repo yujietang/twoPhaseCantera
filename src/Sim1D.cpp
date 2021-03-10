@@ -224,7 +224,7 @@ int Sim1D::newtonSolve(int loglevel)
     }
 }
 
-void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
+void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray, IdealGasPhase* gas)
 {
     bool convg = false;
     bool ifAddSpraySource;
@@ -245,6 +245,13 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
             ifAddSpraySource = do_spray;
             gasflow->if_do_spray_source(ifAddSpraySource);
             cloud->clearGasFlow(ifAddSpraySource);//clear gas field in Lagrangian cloud.
+            const size_t nsp = 34; 
+            vector_fp xlag(nsp, 0.0);
+            xlag[gas->speciesIndex("C2H5OH")] = 0.0; 
+            xlag[gas->speciesIndex("O2")] = 0.21;
+            xlag[gas->speciesIndex("N2")] = 0.78;
+            xlag[gas->speciesIndex("AR")] = 0.01;
+            inletBoundary->setMoleFractions(xlag.data());
         }
 
         //Gas-phase solver:

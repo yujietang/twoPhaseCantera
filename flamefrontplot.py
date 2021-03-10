@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 # filename3 = './result/d50_test.csv'
-# filename2 = './result/d50.csv'
-filename1 = './result/d25.csv'
+filename2 = './result/d75.csv'
+filename1 = './result/d50.csv'
 filename0 = './result/nospray.csv'
 
 FilhoData0 = './result/leanPhi1.csv'
@@ -47,13 +47,13 @@ U1 = data1[2]
 fuel1 = data1[3]
 CO1 = data1[-2]
 
-# data2 = np.loadtxt(filename2, delimiter=',', skiprows=1)
-# data2 = np.transpose(data2)
-# grid2 = data2[0]
-# T2 = data2[1]
-# U2 = data2[2]
-# fuel2 = data2[3]
-# CO2 = data2[-2]
+data2 = np.loadtxt(filename2, delimiter=',', skiprows=1)
+data2 = np.transpose(data2)
+grid2 = data2[0]
+T2 = data2[1]
+U2 = data2[2]
+fuel2 = data2[3]
+CO2 = data2[-2]
 
 # data3 = np.loadtxt(filename3, delimiter=',', skiprows=1)
 # data3 = np.transpose(data3)
@@ -74,7 +74,7 @@ plt.scatter(grid_1, T_1, label='$Filho$ $d = 50$ $\mu m$',c ='b')
 
 plt.plot(grid0, T0, label='$no spray$',c ='k')
 plt.plot(grid1, T1, label='$d = 50$ $\mu m$',c ='b')
-# plt.plot(grid2, T2, label='$d = 50$ $phi = 0.8$ $\mu m$',c ='g')
+plt.plot(grid2, T2, label='$d = 75$ $\mu m$',c ='g')
 # plt.plot(grid3, T3, label='$d = 60$ $\mu m$',c ='g')
 
 #Yfuel plot:
@@ -114,7 +114,7 @@ plt.ylabel(r'$T [K]$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
 plt.xlim(0.003, 0.007)
-plt.ylim(300, 2100)
+# plt.ylim(300, 2100)
 plt.tick_params(labelsize=20)
 
 # handles1, label1 = ax1.get_legend_handles_labels()

@@ -15,7 +15,7 @@ doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spra
     /************************************************************/
     //                       Injection
     /************************************************************/
-    doublereal parcelDiameter(50e-6); // injection droplet diameter [m]
+    doublereal parcelDiameter(75e-6); // injection droplet diameter [m]
     doublereal injTemperature(300); // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm); // injection pressure [Pa]
     const doublereal CoLag = 0.1; //Lagrangian Co number
@@ -25,7 +25,7 @@ doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spra
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 300; // Mesh Point Number
+    const size_t meshPointNumber = 400; // Mesh Point Number
     const doublereal domainLength = 0.008; // Domain Length
     const doublereal gridSize = domainLength/meshPointNumber; // grid size
     doublereal minGrid = parcelDiameter;// min grid size.
@@ -148,6 +148,7 @@ doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spra
     Sim1D sprayflame(domains);
     sprayflame.Cloud(cloud);
     sprayflame.SprStFlow(gasflow);
+    sprayflame.Inlet(inlet);
     /******Supply the initial guess******/
     vector_fp locs{0.0, 0.3, 0.7, 1.0};
     vector_fp value;
@@ -173,7 +174,7 @@ doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spra
     /**********Solve freely propagating flame with spray cloud**********/
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
     gasflow.solveEnergyEqn();
-    sprayflame.solve(loglevel, refine_grid, do_spray); 
+    sprayflame.solve(loglevel, refine_grid, do_spray, &gas); 
 
     double flameSpeed_mix = sprayflame.value(flowdomain,gasflow.componentIndex("u"),0);
     print("Flame speed with mixture-averaged transport: {} m/s\n",
@@ -201,7 +202,7 @@ doublereal SprayFreeFlame(doublereal maxspeed, doublereal phi_over, bool do_spra
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/d50.csv", std::ios::trunc);
+    std::ofstream outfile("./result/d75.csv", std::ios::trunc);
 
     outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
@@ -237,7 +238,7 @@ int main()
 
     doublereal flamespeed;
 
-    flamespeed = SprayFreeFlame(2.2, phi_over, true);
+    flamespeed = SprayFreeFlame(2.5, phi_over, true);
 
     std::cout << "\nSpray flame speed is \t" << flamespeed << std::endl;
     return 0;

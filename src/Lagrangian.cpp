@@ -52,7 +52,6 @@ void Lagrangian::setupInjection(
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
     Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
-    // Nd = 5000;
     std::cout << ">>>>>> n particles per parcel\t:" << Nd << std::endl;
 }
 
@@ -712,14 +711,14 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
 
     doublereal Tls = ((Ts>fuel.Tb()) ? fuel.Tb() : Ts);
-    //vapour enthalpy:
-    doublereal hv = cps*(Tls - Td);
-    doublereal Hv = mddot_*hv;
-    //fuel enthalpy:
-    doublereal hf = cpG*(Tinf - Tls);
-    doublereal Hf = mddot_*hf;
+    // //vapour enthalpy:
+    // doublereal hv = cps*(Tls - Td);
+    // doublereal Hv = mddot_*hv;
+    // //fuel vapour enthalpy:
+    // doublereal hf = cps*(Tinf - Td);
+    // doublereal Hf = mddot_*hf;
      
-    return qd - Hv - Hf;
+    return qd;
 }
 
 void Lagrangian::write() const

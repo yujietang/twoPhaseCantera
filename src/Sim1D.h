@@ -8,6 +8,7 @@
 #ifndef CT_SIM1D_H
 #define CT_SIM1D_H
 
+#include "Inlet1D.h"
 #include "OneDim.h"
 #include "Lagrangian.h"
 
@@ -115,7 +116,7 @@ public:
 
     void setTimeStep(double stepsize, size_t n, const int* tsteps);
 
-    void solve(int loglevel = 0, bool refine_grid = true, bool do_spray = true);
+    void solve(int loglevel = 0, bool refine_grid = true, bool do_spray = true, IdealGasPhase* gas=0);
 
     void eval(doublereal rdt=-1.0, int count = 1) {
         OneDim::eval(npos, m_x.data(), m_xnew.data(), rdt, count);
@@ -228,10 +229,15 @@ public:
         gasflow = &gasflow_;
     }
 
+    void Inlet(Inlet1D& inlet_){
+        inletBoundary = &inlet_;
+    }
+
     const vector_fp& solutionVector() const
     {
         return m_x;
     }
+
 protected:
     //! the solution vector
     vector_fp m_x;
@@ -272,6 +278,7 @@ private:
 
     Lagrangian* cloud;
     StFlow* gasflow;
+    Inlet1D* inletBoundary;
 };
 
 }

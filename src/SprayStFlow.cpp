@@ -372,6 +372,10 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             // Continuity. This propagates information right-to-left, since
             // rho_u at point 0 is dependent on rho_u at point 1, but not on
             // mdot from the inlet.
+            if(spray_source){
+                std::cout << "Yfuel = \t" << Y(x,30,0)<< std::endl;
+
+            }
             rsd[index(c_offset_U,0)] =
                 -(rho_u(x,1) - rho_u(x,0))/m_dz[0]
                 -(density(1)*V(x,1) + density(0)*V(x,0));
@@ -483,7 +487,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
                 //spray 2-way coupled:
                 if(spray_source){
-                    rsd[index(c_offset_T, j)] += ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
+                    rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
                     // std::cout << "@" << j << "\t" << cloud -> htf(j)/m_dz[j] << std::endl;  
                 }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
