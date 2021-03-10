@@ -6,7 +6,7 @@ import matplotlib
 # filename0 = './result/FreeFlame.csv'
 # filename1 = './result/FreeFlamewithDrag.csv'
 # filename1 = './LPT1.csv'
-filename0 = '../result/d=25.csv'
+filename0 = './d=25.csv'
 fonts1 = 18
 fonts2 = 25
 figs = (13,9)
@@ -34,7 +34,6 @@ T = data1[-2]
 # d2_ = data2[3]
 # Tp_ = data2[5]
 # T_ = data2[-2]
-
 #Tc = 320K:
 # time2 = [0.0, 0.00505, 0.00903, 0.013, 0.01608, 0.01998, 0.0239, 0.02809, 0.03194, 0.03592, 0.0399, 0.04396]
 # value2 = [0.95922, 0.90478, 0.85438, 0.80221, 0.76189, 0.71149, 0.65705, 0.60489, 0.55247, 0.50207, 0.4499, 0.39748]
