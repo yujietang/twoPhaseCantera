@@ -1,0 +1,4 @@
+An one-way coupling solver 
+which tracks the single component 
+droplet evaporation with gradient 
+diffusion evaporation model.

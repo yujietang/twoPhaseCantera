@@ -180,18 +180,22 @@ void Lagrangian::solve()
 
     doublereal _xp = 0;
     doublereal _ug = ug[0];
+    doublereal _Tp;
     doublereal _rhog = rhog[0];
     doublereal _mug = mug[0];
     doublereal _Red;
     //tracking step n:
-    size_t marchingStep = 16000;
+    size_t marchingStep = 2e+5;
 
     // size_t marchingStep = 2e+4;
     for(size_t n=1; n<marchingStep; ++n)
     {
         std::cout << "**************** Tracking the parcel [ "
                     << n << " ] ****************\n" << std::endl;
-        
+        if((dp.back()<small) || (mp.back()<small) || (_xp > gas->zmax()))
+        {
+            break;
+        }
         _xp += up[n-1]*dtlag;
 
         //parcel's position:
@@ -204,10 +208,12 @@ void Lagrangian::solve()
         mp.push_back(
             mp[n-1] + Nd*dtlag*mddot(n-1)
         );
-
+        std::cout << "Check ... ... mp =                " << mp[mp.size()-1] << std::endl;
+        
         //parcel's temperature:
+        _Tp = Tp[n-1] + dtlag*Tddot(n-1);
         Tp.push_back(
-            Tp[n-1] + Nd*dtlag*Tddot(n-1)
+            (_Tp < fuel.Tb() ? _Tp : fuel.Tb())
         );
 
         //parcel's density
@@ -263,11 +269,6 @@ void Lagrangian::solve()
 
         if(Np != mp.size()){
             std::cerr << "###### Error: parcel's number is not equal to Np! ######";
-        }
-
-        if(dp[n]<small || mp[n]<small || _xp > 0.6)
-        {
-            break;
         }
 
         std::cout << "******************** End Tracking ********************"
@@ -677,7 +678,7 @@ doublereal Lagrangian::Tddot(size_t n)
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("FreeFlamewithDrag.csv");
+    std::ofstream fout1("d=25.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

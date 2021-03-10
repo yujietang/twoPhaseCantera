@@ -13,7 +13,7 @@ using fmt::print;
 int main()
 {
 /********************Set Injection********************/
-    doublereal parcelDiameter(50e-6); // m
+    doublereal parcelDiameter(25e-6); // m
     doublereal injTemperature(300); // K
     doublereal injPressure(1.0*OneAtm); // Pa
     size_t dropletNumber(1);

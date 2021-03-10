@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-filename0 = './FreeFlame.csv'
-filename1 = './FreeFlamewithDrag.csv'
+filename0 = './result/FreeFlame.csv'
+filename1 = './result/FreeFlamewithDrag.csv'
 # filename1 = './LPT1.csv'
 fonts1 = 18
 fonts2 = 25

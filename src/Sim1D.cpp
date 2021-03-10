@@ -344,7 +344,6 @@ void Sim1D::solve(int loglevel, bool refine_grid)
         //LPT:
         // cloud->solve();//solve the ODE of parcel's motion.
         // cloud->evalTransf();//import the liquid source into Gas phase flow.
-
         // convg = cloud->evalRsd(m_x);//determine if converge?
         convg = true;
         if(convg == true)
