@@ -116,7 +116,7 @@ public:
 
     void setTimeStep(double stepsize, size_t n, const int* tsteps);
 
-    void solve(int loglevel = 0, bool refine_grid = true, bool do_spray = true, IdealGasPhase* gas=0);
+    void solve(int loglevel = 0, bool refine_grid = true, bool do_spray = true);
 
     void eval(doublereal rdt=-1.0, int count = 1) {
         OneDim::eval(npos, m_x.data(), m_xnew.data(), rdt, count);
@@ -229,14 +229,12 @@ public:
         gasflow = &gasflow_;
     }
 
-    void Inlet(Inlet1D& inlet_){
-        inletBoundary = &inlet_;
-    }
-
     const vector_fp& solutionVector() const
     {
         return m_x;
     }
+    //evaluate species mass fraction in solution vector:
+    void setInletGasFlow();
 
 protected:
     //! the solution vector
@@ -278,7 +276,6 @@ private:
 
     Lagrangian* cloud;
     StFlow* gasflow;
-    Inlet1D* inletBoundary;
 };
 
 }

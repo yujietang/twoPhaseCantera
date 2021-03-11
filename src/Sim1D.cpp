@@ -224,7 +224,7 @@ int Sim1D::newtonSolve(int loglevel)
     }
 }
 
-void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray, IdealGasPhase* gas)
+void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
 {
     bool convg = false;
     bool ifAddSpraySource;
@@ -245,13 +245,6 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray, IdealGasPhase* 
             ifAddSpraySource = do_spray;
             gasflow->if_do_spray_source(ifAddSpraySource);
             cloud->clearGasFlow(ifAddSpraySource);//clear gas field in Lagrangian cloud.
-            const size_t nsp = 34; 
-            vector_fp xlag(nsp, 0.0);
-            xlag[gas->speciesIndex("C2H5OH")] = 0.0; 
-            xlag[gas->speciesIndex("O2")] = 0.21;
-            xlag[gas->speciesIndex("N2")] = 0.78;
-            xlag[gas->speciesIndex("AR")] = 0.01;
-            inletBoundary->setMoleFractions(xlag.data());
         }
 
         //Gas-phase solver:
@@ -274,6 +267,11 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray, IdealGasPhase* 
                 setSteadyMode();
                 newton().setOptions(m_ss_jac_age);
                 debuglog("Attempt Newton solution of steady-state problem...", loglevel);
+                
+                // if( Nloop !=1 ){
+                    // setValue(0, 35, 0, 0.0);
+                // }
+
                 int status = newtonSolve(loglevel-1);
                 if (status == 0) {
                     if (loglevel > 0) {
@@ -371,7 +369,8 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray, IdealGasPhase* 
 
         cloud->evalTransf();//import the liquid source into Gas phase flow.
 
-        convg = cloud->evalRsd(Nloop, m_x);
+        // convg = cloud->evalRsd(Nloop, m_x);
+        convg = cloud->evalResidual(Nloop, ifAddSpraySource, m_x);
         
         std::cout << "\n>>>>>>>>>>>>>>>>>>>>>"
                 << "The Lagrangian iteration step is\t" << Nloop << std::endl;

@@ -13,15 +13,16 @@ Lagrangian::Lagrangian(
    const doublereal pinjection,
    const doublereal lagrangianTimeStep,
    const doublereal Mdotinjection,
-   const size_t dropletNumber
+   const doublereal injectionPosition
 ) :
     Thermo(0),
     fuel(pinjection),
     d_inj(parcelDiameter),
     Tp_inj(TInjection),
     Mdotp_inj(Mdotinjection),
+    z_inj(injectionPosition),
     p_inj(pinjection),
-    Nd(dropletNumber),
+    Nd(0),
     Np(1),
     dtlag(lagrangianTimeStep),
     gas(0),
@@ -31,7 +32,7 @@ Lagrangian::Lagrangian(
     setupInjection(d_inj, 
                 Tp_inj,
                 Mdotp_inj);
-    std::cout << "\n====================Parcel Initialization====================" << std::endl;
+    std::cout << "\n>>>>>>>>>>>>>> Parcel Initialization <<<<<<<<<<<<<" << std::endl;
     std::cout << "injection temperature = " << Tp_inj << std::endl;
     std::cout << "injection pressure = " << p_inj << std::endl;
     std::cout << "liquid mass flow rate = " << Mdotp_inj << std::endl;
@@ -52,7 +53,7 @@ void Lagrangian::setupInjection(
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
     Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
-    std::cout << ">>>>>> n particles per parcel\t:" << Nd << std::endl;
+    std::cout << ">>>>>>\t"<< Nd <<"\tparticles per parcel\t<<<<<<\n"<< std::endl;
 }
 
 void Lagrangian::evalGasFlow(const vector_fp& solution)
@@ -88,9 +89,9 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
     }
 }
 
-void Lagrangian::inject()
+void Lagrangian::inject(doublereal injectionPosition)
 {
-    xp.push_back(z[0]);
+    xp.push_back(injectionPosition - z[0]);
     mp.push_back(Md_inj);
     Tp.push_back(Tp_inj);
     up.push_back(ug[0]);
@@ -137,10 +138,10 @@ void Lagrangian::evalParcelFlow()
 void Lagrangian::solve()
 {
     clearParcel();
-    this->inject();
+    this->inject(z_inj);
 
     doublereal time = 0;
-    doublereal _xp = 0;
+    doublereal _xp = (z_inj - z[0]);
     doublereal _ug = ug[0];
     doublereal _Tp; 
     doublereal _rhog = rhog[0];
@@ -151,8 +152,6 @@ void Lagrangian::solve()
 
     for(size_t n=1; n<marchingStep; ++n)
     {
-        // std::cout << "**************** Tracking the parcel [ "
-        //             << n << " ] ****************\n" << std::endl;
         if((dp.back()<small) || (mp.back()<small) || (_xp > gas->zmax()))
         {
             break;
@@ -196,10 +195,7 @@ void Lagrangian::solve()
 
         // //parcel's velocity
         // //Yuan & Chen (1976):
-        // std::cout << "LOCAL Parcel VELOCITY AT x_p = " 
-        //         << xp[n-1] 
-        //         << " = "
-        //         << up[n-1] << "\n"<< std::endl;
+        // std::cout<<"LOCAL Parcel VELOCITY AT x_p = "<< xp[n-1] <<" = "<< up[n-1] <<"\n"<<std::endl;
         _ug = intpfield(ug, z, xp[n-1]);
         _rhog = intpfield(rhog, z, xp[n-1]);
         _mug = intpfield(mug, z, xp[n-1]);
@@ -237,7 +233,7 @@ void Lagrangian::solve()
     }
 }
 
-void Lagrangian::recordOldSrc()
+void Lagrangian::recordOldValue()
 {
     for(size_t ii = 0; ii < mtf_.size(); ++ii){
         mtfOld_[ii] = mtf(ii);
@@ -247,7 +243,7 @@ void Lagrangian::recordOldSrc()
 
 void Lagrangian::evalTransf()
 {
-    this->recordOldSrc();
+    this->recordOldValue();
     
     //resize the vector of quantities transfer:
     htf_.resize(z.size(), 0.0);
@@ -294,7 +290,6 @@ void Lagrangian::evalTransf()
             }
         }
     }
-
     // for(size_t ii=0;ii<mtf_.size();++ii){
     //     std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
     //               << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
@@ -332,14 +327,7 @@ void Lagrangian::clearGasFlow(bool do_spray)
         Yg.resize(gas->nsp());
         for(size_t k=0; k<Yg.size(); ++k){
             Yg[k].clear();
-        }
-
-        // std::cout << "\n>>>>>>>>>>> After Clear Gas FLow <<<<<<<<<<<" << std::endl;
-        // for(size_t ii=0;ii<mtf_.size();++ii){
-        //     std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
-        //             << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
-        // }
-            
+        }            
     }
     else{
         mtfOld_.resize(gas->grid().size(), 0.0);
@@ -351,9 +339,10 @@ doublereal Lagrangian::intpfield(vector_fp& field, vector_fp& grid, doublereal x
 {
     if(xp < gas->zmin()){
         std::cerr << "ERROR: Parcel does not reach the inlet!" << std::endl;
+        return 0;
     }
     else if(xp > gas->zmax()){
-        std::cerr << "ERROR: Parcel moves beyond the domain!" << std::endl;
+        return 0;
     }
     else if(xp == gas->zmin()){
         return field[0];
@@ -374,35 +363,68 @@ doublereal Lagrangian::intpfield(vector_fp& field, vector_fp& grid, doublereal x
     }
 }
 
-bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
-{      
-    if(Nloop == 1)
-    {
-        std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
-        Told = Tg[Tg.size()-1];
-        return false;
+// bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
+// {      
+//     if(Nloop == 1)
+//     {
+//         std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
+//         Told = Tg.back();
+//         return false;
+//     }
+//     else{
+//         Tnew = Tg.back();
+//         doublereal rsd = 1.0;
+//         std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
+//         std::cout << "\n Told = " << Told << std::endl;
+//         std::cout << "\n Tnew = " << Tnew << std::endl;
+//         /*****evaluate the residual*****/
+//         rsd = abs(Tnew - Told)/(Told + small);
+//         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
+//         if(rsd < 2e-3){
+//             std::cout << "\nResidual Checking has been done!\n" << std::endl;
+//             return true;
+//         }
+//         else{
+//             Told = Tnew;
+//             return false;
+//         }
+//     }
+// }
+
+bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, const vector_fp& solution)
+{
+    if(ifAddSpraySource){
+        TNew_.resize(Tg.size());
+        for(size_t ii=0; ii<Tg.size(); ++ii){
+            TNew_[ii] = Tg[ii];
+        }
+        double sum = 0.0;
+        double rsd = 1.0;
+        for(size_t ii=0; ii<TOld_.size(); ++ii){
+            sum += (abs(TNew_[ii] - TOld_[ii])/TOld_[ii]);
+        }
+        rsd = sum/(TOld_.size()+small);
+        if(rsd < 1e-3){
+            std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
+            std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+            return true;
+        }else{
+            for(size_t ii=0; ii<TOld_.size(); ++ii){
+                std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
+                std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+                TOld_[ii] = TNew_[ii];
+                return false;
+            }
+        }
     }
     else{
-        Tnew = Tg[Tg.size()-1];
-        doublereal rsd = 1.0;
-
-        std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
-        std::cout << "\n Told = " << Told << std::endl;
-        std::cout << "\n Tnew = " << Tnew << std::endl;
-
-        /*****evaluate the residual*****/
-        rsd = abs(Tnew - Told)/(Told + small);
-
-        std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-        if(rsd < 2e-3){
-            std::cout << "\nResidual Checking has been done!\n" << std::endl;
-            return true;
+        TOld_.resize(Tg.size());
+        for(size_t ii=0; ii<Tg.size(); ++ii){
+            TOld_[ii] = Tg[ii];
         }
-        else{
-            Told = Tnew;
-            return false;
-        }
+        return false;
     }
+
 }
 
 void Lagrangian::setMpdot(doublereal mdot)
@@ -536,7 +558,8 @@ doublereal Lagrangian::mddot_th(size_t n)
     //liquid surface fuel molar fraction:
     // Clausius-Clapeyron relation:
     doublereal Tboiling = fuel.Tb();
-    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    // doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    doublereal Xsf = (psat/p0)*exp((4640.16)*((1.0/Tboiling)-(1.0/Td)));
     doublereal Ysf = Xsf*mw[kf];
     const double TRatio = Tinf/Ts; 
     rhos = rhoG*TRatio;
@@ -593,7 +616,8 @@ doublereal Lagrangian::Tddot(size_t n) //[K/s]
     //liquid surface fuel molar fraction:
     // Clausius-Clapeyron relation:
     doublereal Tboiling = fuel.Tb();
-    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    // doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    doublereal Xsf = (psat/p0);
     doublereal Ysf = Xsf*mw[kf];
 
     const double sqrtW = sqrt(mw[kf]);
@@ -670,7 +694,8 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     //liquid surface fuel molar fraction:
     // Clausius-Clapeyron relation:
     doublereal Tboiling = fuel.Tb();
-    doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    // doublereal Xsf = (psat/p0)*exp((38.56/(RR))*((1.0/Tboiling)-(1.0/Td)));
+    doublereal Xsf = (psat/p0);
     doublereal Ysf = Xsf*mw[kf];
 
     const double sqrtW = sqrt(mw[kf]);
@@ -725,7 +750,7 @@ void Lagrangian::write() const
 {
     double t = 0;
     std::ofstream fout1("./result/2way.csv");
-    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s]" << std::endl;
+    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){
             fout1 << (t+ip*dtlag) << ","
@@ -735,7 +760,9 @@ void Lagrangian::write() const
                 << mp[ip]*(1e+6) << ","
                 << Tp[ip] << ","
                 << T_[ip] << ","
-                << u_[ip] << std::endl;
+                << u_[ip] << ","
+                << mtfp_[ip] << ","
+                << htfp_[ip] << std::endl;
         }
     }
 }

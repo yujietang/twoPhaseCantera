@@ -26,7 +26,7 @@ class Lagrangian
                    const doublereal pinjection,
                    const doublereal lagrangianTimeStep,
                    const doublereal Mdotinjection,
-                   const size_t dropletNumber);
+                   const doublereal injectionPosition);
 
         //set up the injection properties:
         void setupInjection(doublereal d, doublereal Tp, doublereal mdotp);
@@ -49,7 +49,7 @@ class Lagrangian
         void solve();
 
         //initialize the injection:
-        void inject();
+        void inject(doublereal injectionPosition);
         
         //clear the field at previous iteration step:
         void clearParcel();
@@ -57,7 +57,7 @@ class Lagrangian
         //clear the field of gas-phase information in the last step:
         void clearGasFlow(bool do_spray);
 
-        void recordOldSrc();
+        void recordOldValue();
 
         //interpolate data from Eulerian field to parcel's position:
         //@ field: Eulerian field i.e. u, T, rho
@@ -70,7 +70,7 @@ class Lagrangian
         
         //Calculate the residual during iteration:
         bool evalRsd(const size_t& Nloop, const vector_fp& solution);
-
+        bool evalResidual(const size_t& Nloop, const bool ifAddSpraySource, const vector_fp& solution);
         //set the mass flux of liquid droplets:
         //@ mdot: gas phase mass flux.
         void setMpdot(doublereal mdot);
@@ -175,9 +175,11 @@ class Lagrangian
 
         doublereal small;
 
-        //evaluate residual:
-        doublereal Told;
-        doublereal Tnew;
+        // //evaluate residual:
+        // doublereal Told;
+        // doublereal Tnew;
+        vector_fp TOld_;
+        vector_fp TNew_;
         
         //gas phase:
         vector_fp z;
@@ -214,6 +216,7 @@ class Lagrangian
         doublereal p0;
         doublereal d_inj; //injection diameter.
         doublereal Mdotp_inj; //injection parcel's mass flow rate.
+        doublereal z_inj; // distance between the liquid inlet and gas inlet
         doublereal Tp_inj; //injection temperature.
         doublereal p_inj; //injection pressure.
         doublereal Vold_inj; //injection droplet volume.

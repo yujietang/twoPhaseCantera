@@ -149,9 +149,9 @@ int main()
         sprayflame.setInitialGuess(gas.speciesName(k), locs, value);
     }
 
-    inlet.setMoleFractions(x.data());
-    inlet.setMdot(mdot);
-    inlet.setTemperature(temp);
+    // inlet.setMoleFractions(x.data());
+    // inlet.setMdot(mdot);
+    // inlet.setTemperature(temp);
 
     sprayflame.showSolution();
     int flowdomain = 1;
