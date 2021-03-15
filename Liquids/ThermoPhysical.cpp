@@ -11,8 +11,8 @@ using namespace std;
 // ICetane ict(101325);
 // TransDecalin tdc(101325);
 // Toluene tln(101325);
-
-Ethanol eth(101325);
+NC7H16 hep(101325);
+// Ethanol eth(101325);
 
 const int tl = 250;
 const int th = 500;
@@ -28,15 +28,18 @@ int main()
     // ofstream fict("IC16H36.csv");
     // ofstream ftdc("C10H18.csv");
     // ofstream ftln("C7H8.csv");
-    ofstream feth("C2H5OH.csv");
+    // ofstream feth("C2H5OH.csv");
+    ofstream fhep("C7H16.csv");
 
     for (double t : tem) {
         // fndc << t << ',' << ndc.rho(t) << ',' << ndc.pv(t) << ',' << ndc.Lv(t) << endl;
         // fict << t << ',' << ict.rho(t) << ',' << ict.pv(t) << ',' << ict.Lv(t) << endl;
         // ftdc << t << ',' << tdc.rho(t) << ',' << tdc.pv(t) << ',' << tdc.Lv(t) << endl;
         // ftln << t << ',' << tln.rho(t) << ',' << tln.pv(t) << ',' << tln.Lv(t) << endl;
-        feth << t << ',' << eth.rho(t) << ',' << eth.pv(t) << ',' << eth.Lv(t) 
-        << ',' << eth.D(t) << ',' << eth.cpg(t)<< endl;
+        // feth << t << ',' << eth.rho(t) << ',' << eth.pv(t) << ',' << eth.Lv(t) 
+        // << ',' << eth.D(t) << ',' << eth.cpg(t)<< endl;
+        fhep << t << ',' << hep.rho(t) << ',' << hep.pv(t) << ',' << hep.Lv(t) 
+        << ',' << hep.D(t) << ',' << hep.cpg(t)<< endl;
     }
 
     return 0;

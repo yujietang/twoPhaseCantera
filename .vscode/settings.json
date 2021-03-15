@@ -64,6 +64,7 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "myreactingParcelFoam.C": "cpp"
+        "myreactingParcelFoam.C": "cpp",
+        "*.ipp": "cpp"
     }
 }

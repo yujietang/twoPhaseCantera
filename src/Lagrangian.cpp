@@ -13,7 +13,8 @@ Lagrangian::Lagrangian(
    const doublereal pinjection,
    const doublereal lagrangianTimeStep,
    const doublereal Mdotinjection,
-   const doublereal injectionPosition
+   const doublereal injectionPosition,
+   const size_t fuelIndex
 ) :
     Thermo(0),
     fuel(pinjection),
@@ -21,6 +22,7 @@ Lagrangian::Lagrangian(
     Tp_inj(TInjection),
     Mdotp_inj(Mdotinjection),
     z_inj(injectionPosition),
+    kf(fuelIndex),
     p_inj(pinjection),
     Nd(0),
     Np(1),
@@ -423,6 +425,7 @@ bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, 
             TOld_[ii] = Tg[ii];
         }
         return false;
+        // return true;
     }
 
 }
@@ -434,7 +437,6 @@ void Lagrangian::setMpdot(doublereal mdot)
 
 doublereal Lagrangian::mddot(size_t n) //[kg/s]
 {
-    const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO: multi-component fuel
     //all parameters needed:
     doublereal Ni;
@@ -514,7 +516,6 @@ doublereal Lagrangian::mddot(size_t n) //[kg/s]
 /***********************Theoretical model of droplet evaporation************************/
 doublereal Lagrangian::mddot_th(size_t n)
 {
-    const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO:only for ethanol
     //all parameters needed:
     doublereal Ni;
@@ -580,7 +581,6 @@ doublereal Lagrangian::mddot_th(size_t n)
 doublereal Lagrangian::Tddot(size_t n) //[K/s]
 {
     //For droplet:
-    const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO:only for ethanol
     doublereal md = mp[n];
     doublereal Td = Tp[n];
@@ -657,7 +657,6 @@ doublereal Lagrangian::Tddot(size_t n) //[K/s]
 doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
 {
     //For droplet:
-    const size_t kf = 30;
     const doublereal MWf = mw[kf];//TODO:only for ethanol
     const vector_fp& hf_RT = Thermo->enthalpy_RT_ref();//
     doublereal md = mp[n];

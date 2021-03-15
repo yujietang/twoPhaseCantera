@@ -26,7 +26,8 @@ class Lagrangian
                    const doublereal pinjection,
                    const doublereal lagrangianTimeStep,
                    const doublereal Mdotinjection,
-                   const doublereal injectionPosition);
+                   const doublereal injectionPosition,
+                   const size_t fuelIndex);
 
         //set up the injection properties:
         void setupInjection(doublereal d, doublereal Tp, doublereal mdotp);
@@ -171,7 +172,8 @@ class Lagrangian
     private:
         StFlow* gas;
         IdealGasPhase* Thermo;
-        Ethanol fuel;
+        // Ethanol fuel;
+        NC7H16 fuel;
 
         doublereal small;
 
@@ -213,6 +215,7 @@ class Lagrangian
 
         size_t Np; //parcel number.
         size_t Nd; //droplet number per parcel.
+        size_t kf; // fuel index in solution vector
         doublereal p0;
         doublereal d_inj; //injection diameter.
         doublereal Mdotp_inj; //injection parcel's mass flow rate.
@@ -222,7 +225,6 @@ class Lagrangian
         doublereal Vold_inj; //injection droplet volume.
         doublereal Md_inj; //injection droplet mass. 
         doublereal dtlag; //evaporation time step.
-
         doublereal Ndot; //number of parcels per second. [1/s]
 
         //transport quantities of parcel:

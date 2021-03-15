@@ -210,6 +210,13 @@ void Sim1D::setTimeStep(double stepsize, size_t n, const int* tsteps)
     }
 }
 
+void Sim1D::setInletGasFlow()
+{
+    // comp = (kf + 5)
+    //at the inlet point:
+    setValue(0, 50, 0, 0.0);
+}
+
 int Sim1D::newtonSolve(int loglevel)
 {
     int m = OneDim::solve(m_x.data(), m_xnew.data(), loglevel);
@@ -267,10 +274,10 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
                 setSteadyMode();
                 newton().setOptions(m_ss_jac_age);
                 debuglog("Attempt Newton solution of steady-state problem...", loglevel);
-                
-                // if( Nloop !=1 ){
-                    // setValue(0, 35, 0, 0.0);
-                // }
+
+                if(ifAddSpraySource){
+                    setInletGasFlow();
+                }
 
                 int status = newtonSolve(loglevel-1);
                 if (status == 0) {

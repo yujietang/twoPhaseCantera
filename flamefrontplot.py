@@ -3,13 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-filename3 = './result/d50_Phiover0.9_Phig0.8.csv'
-filename2 = './result/d50_phi0.8.csv'
-filename1 = './result/d50_phi0.9.csv'
-filename0 = './result/flamespeed.csv'
+# filename3 = './result/nospray_domain5_mesh800.csv'
+# filename2 = './result/nospray_phi0.8_mesh800.csv'
+filename1 = './result/nheptane_phi09_nospray_mesh400.csv'
+filename0 = './result/nheptane_phi09_meshrefined.csv'
 
-FilhoData0 = './result/leanPhi1.csv'
-FilhoData1 = './result/leand50.csv'
+Data0 = './result/nheptane_nospray.csv'
+# Data1 = './result/leand50.csv'
 # filename1 = './LPT1.csv'
 fonts1 = 25
 fonts2 = 25
@@ -21,15 +21,15 @@ plt.rcParams['font.family'] = 'Serif'
 from matplotlib import rc
 plt.rcParams['mathtext.fontset'] = 'stix'
 
-exp0 = np.loadtxt(FilhoData0, delimiter=',', skiprows=0)
+exp0 = np.loadtxt(Data0, delimiter=',', skiprows=0)
 exp0 = np.transpose(exp0)
 grid_0 = exp0[0]
 T_0 = exp0[1]
 
-exp1 = np.loadtxt(FilhoData1, delimiter=',', skiprows=0)
-exp1 = np.transpose(exp1)
-grid_1 = exp1[0]
-T_1 = exp1[1]
+# exp1 = np.loadtxt(Data1, delimiter=',', skiprows=0)
+# exp1 = np.transpose(exp1)
+# grid_1 = exp1[0]
+# T_1 = exp1[1]
 
 data0 = np.loadtxt(filename0, delimiter=',', skiprows=1)
 data0 = np.transpose(data0)
@@ -37,7 +37,6 @@ grid0 = data0[0]
 T0 = data0[1]
 U0 = data0[2]
 fuel0 = data0[3]
-CO0 = data0[-2]
 
 data1 = np.loadtxt(filename1, delimiter=',', skiprows=1)
 data1 = np.transpose(data1)
@@ -45,23 +44,20 @@ grid1 = data1[0]
 T1 = data1[1]
 U1 = data1[2]
 fuel1 = data1[3]
-CO1 = data1[-2]
 
-data2 = np.loadtxt(filename2, delimiter=',', skiprows=1)
-data2 = np.transpose(data2)
-grid2 = data2[0]
-T2 = data2[1]
-U2 = data2[2]
-fuel2 = data2[3]
-CO2 = data2[-2]
+# data2 = np.loadtxt(filename2, delimiter=',', skiprows=1)
+# data2 = np.transpose(data2)
+# grid2 = data2[0]
+# T2 = data2[1]
+# U2 = data2[2]
+# fuel2 = data2[3]
 
-data3 = np.loadtxt(filename3, delimiter=',', skiprows=1)
-data3 = np.transpose(data3)
-grid3 = data3[0]
-T3 = data3[1]
-U3 = data3[2]
-fuel3 = data3[3]
-CO3 = data3[-2]
+# data3 = np.loadtxt(filename3, delimiter=',', skiprows=1)
+# data3 = np.transpose(data3)
+# grid3 = data3[0]
+# T3 = data3[1]
+# U3 = data3[2]
+# fuel3 = data3[3]
 
 #temperature plot:
 # plt.scatter(grid0, T0, label='$no spray$',c ='k', s=20)
@@ -69,13 +65,13 @@ CO3 = data3[-2]
 # plt.scatter(grid2, T2, label='$d = 50$ $\mu m$',c ='b',s=10)
 # plt.scatter(grid3, T3, label='$d = 60$ $\mu m$',c ='g',s=10)
 
-plt.scatter(grid_0, T_0, label='$Filho$ $no$ $spray$',c ='k')
-plt.scatter(grid_1, T_1, label='$Filho$ $d = 50$ $\mu m$',c ='b')
+plt.scatter(grid_0, T_0, label='$Exp.$ $no$ $spray$',c ='k')
+# plt.scatter(grid_1, T_1, label='$Filho$ $d = 50$ $\mu m$',c ='b')
 
-plt.plot(grid0-0.021+0.00025, T0, label='$no spray$',c ='k')
-plt.plot(grid1-0.021+0.00025, T1, label='$d = 50$ $\mu m,$ ${\phi}_g = 0.9$',c ='b')
-plt.plot(grid2-0.021+0.00025, T2, label='$d = 50$ $\mu m,$ ${\phi}_g = 0.8$',c ='g')
-plt.plot(grid3-0.021+0.00025, T3, label='$d = 50$ $\mu m,$ ${\phi}_g = 0.8$ $finer$ $mesh$',c='b',ls=':')
+plt.plot(grid0-0.0017, T0, label='$refined$ $mesh$',c ='k')
+plt.plot(grid1-0.0017, T1, label='$mesh = 400$',c ='b')
+# plt.plot(grid2-0.002, T2, label='$mesh = 800$',c ='g')
+# plt.plot(grid3-0.002, T3, label='$mesh = 2000$',c='b',ls=':')
 
 #Yfuel plot:
 # plt.scatter(grid0, fuel0, label='$Y_{ethanol}$ $no spray$',c ='k', s=20)
@@ -113,7 +109,7 @@ plt.ylabel(r'$T [K]$',fontsize=fonts1)
 # ax2.set_ylabel(r'$Tp/Tp_0$ $(-)$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
-plt.xlim(0.003, 0.007)
+plt.xlim(0.006, 0.012)
 # plt.ylim(300, 2100)
 plt.tick_params(labelsize=20)
 
