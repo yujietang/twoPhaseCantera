@@ -19,11 +19,11 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     doublereal injTemperature(300);              // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm);          // injection pressure [Pa]
     doublereal injectionPosition(0.008);
-    const doublereal CoLag = 0.025;               //Lagrangian Co number
+    const doublereal CoLag = 0.01;               //Lagrangian Co number
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 200;          // Mesh Point Number
+    const size_t meshPointNumber = 400;          // Mesh Point Number
     const doublereal domainLength = 0.02;        // Domain Length
     bool refine_grid = false;                    // Refined mesh has been turned off
     /************************************************************/
@@ -68,7 +68,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
     doublereal fa_stoic_mole = 1.0 / (4.76 * ax);        // fuel / air mole ratio at stoic state
-    doublereal fa_stoic_mass = 0.065;  
+    doublereal fa_stoic_mass = 0.0659277;  
     // Species' mole fraction when the condition is fuel/oxidizer flow:
     x[gas.speciesIndex("NC7H16")] = 1.0; 
     x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic_mole;
@@ -81,7 +81,8 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
 
     /************************************************************/
-    doublereal uin = 0.3; // initial guess of inlet velocity [m/s]
+    doublereal uf = flamespeed; //laminar flame speed;
+    doublereal uin = uf; // initial guess of inlet velocity [m/s]
     gas.setState_TPX(temp, pressure, x.data());
     doublereal rho_in = gas.density();
     std::cout << "inlet rhog = " << rho_in << std::endl;
@@ -89,11 +90,10 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     gas.getMassFractions(&yin[0]);
 
     /***************Evaluate the liquid mass flux***************/
-    doublereal uf = flamespeed; //laminar flame speed;
     doublereal Mdot_gas = rho_in*uf;
     doublereal Mdot_air = Mdot_gas/(fa_stoic_mass*phi+1);
     doublereal Mdot_fuel = Mdot_gas - Mdot_air;
-    doublereal Mdot_liquid = fa_stoic_mass*phi_over*Mdot_air - Mdot_fuel;
+    doublereal Mdot_liquid = (rho_in*uf/(1+fa_stoic_mass*phi))*(phi_over-phi)*fa_stoic_mass;
 
     std::cout << "The intermediate flame speed is " <<  uf << std::endl; 
     std::cout << "gas mass flux = " << Mdot_gas << std::endl;
@@ -244,7 +244,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nheptane_test.csv", std::ios::trunc);
+    std::ofstream outfile("./result/nheptane_d20.csv", std::ios::trunc);
 
     outfile << "  Grid,   Temperature,   Uvec,  C7H16, O2, CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {

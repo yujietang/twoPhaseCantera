@@ -154,7 +154,7 @@ void Lagrangian::solve()
 
     for(size_t n=1; n<marchingStep; ++n)
     {
-        if((dp.back()<small) || (mp.back()<small) || (_xp > gas->zmax()))
+        if((dp.back()<0) || (mp.back()<0) || (_xp > gas->zmax()))
         {
             break;
         }
@@ -406,15 +406,17 @@ bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, 
             sum += (abs(TNew_[ii] - TOld_[ii])/TOld_[ii]);
         }
         rsd = sum/(TOld_.size()+small);
-        if(rsd < 1e-3){
+        if(rsd < 1e-4){
             std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
             std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+            std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
             return true;
         }else{
             for(size_t ii=0; ii<TOld_.size(); ++ii){
                 std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
                 std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
                 TOld_[ii] = TNew_[ii];
+                std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
                 return false;
             }
         }
@@ -545,9 +547,6 @@ doublereal Lagrangian::mddot_th(size_t n)
     for(size_t k=0; k<Yc.size(); ++k){
         Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
     }
-    for(size_t k=0; k<Xc.size(); ++k){
-        Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
-    }
     //calculate the surface (vapour film) values:
     doublereal Ts, rhos, mus, Pr, kappas;
     Ts = (2*Td + Tinf)/3;
@@ -602,9 +601,6 @@ doublereal Lagrangian::Tddot(size_t n) //[K/s]
     double sumYkMW = std::accumulate(YkMW.begin(), YkMW.end(), 0.0);
     for(size_t k=0; k<Yc.size(); ++k){
         Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
-    }
-    for(size_t k=0; k<Xc.size(); ++k){
-        Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
     }
 
     //surface temperature:
@@ -680,9 +676,6 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     for(size_t k=0; k<Yc.size(); ++k){
         Xc[k] = (Yc[k]/mw[k])/(sumYkMW);
     }
-    for(size_t k=0; k<Xc.size(); ++k){
-        Xc[k] /= std::accumulate(Xc.begin(), Xc.end(), 0.0);
-    }
 
     //surface temperature:
     doublereal Ts = (2*Td + Tinf)/3.0;
@@ -742,13 +735,14 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     // doublereal hf = cps*(Tinf - Td);
     // doublereal Hf = mddot_*hf;
      
+    // return qd + mddot_*fuel.cpg(0.5*(Tinf+Ts))*(Td-Tinf);
     return qd;
 }
 
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("./result/2way.csv");
+    std::ofstream fout1("./result/2way_d20.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%5) == 0){

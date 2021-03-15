@@ -150,23 +150,6 @@ class Lagrangian
             }
         }
 
-        /******liquid and vapour properties are calculated by NSRD functions******/
-        //liquid thermal conductivity:
-        doublereal kappa(doublereal Tp) const
-        {
-            return -0.000281*Tp + 0.253;
-        }
-
-        //vapour thermal conductivity:
-        doublereal kappav(doublereal Ts) const
-        {
-            double a = -3.12;
-            double b = 0.7152;
-            double c = -3550000;
-            double d = 0.0;
-            return a*pow(Ts, b)/(1+(c/Ts)+d/(Ts*Ts));
-        }
-
         void write() const;
     
     private:

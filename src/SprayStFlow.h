@@ -400,18 +400,6 @@ protected:
     doublereal flux(size_t k, size_t j) const {
         return m_flux(k, j);
     }
-
-    doublereal Dirac(size_t k, const std::vector<size_t>& fuelIndex_) {
-        for(size_t i=0; i<fuelIndex_.size(); ++i)
-        {
-            if(k==fuelIndex_[i]){
-                return 1.0;
-            }else
-            {
-                return 0.0;
-            }
-        }        
-    }
     //! @}
 
     //! @name convective spatial derivatives.

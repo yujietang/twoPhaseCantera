@@ -252,6 +252,11 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
             ifAddSpraySource = do_spray;
             gasflow->if_do_spray_source(ifAddSpraySource);
             cloud->clearGasFlow(ifAddSpraySource);//clear gas field in Lagrangian cloud.
+            // cloud->evalGasFlow(m_x);//import the gas field into lagrangian cloud.
+            // cloud->solve();//solve the ODE of parcel's motion.
+            // cloud->evalTransf();//import the liquid source into Gas phase flow.
+            // convg = cloud->evalResidual(Nloop, ifAddSpraySource, m_x);
+            // std::cout << "\n>>>>>>>>>>>\t"<< "The Lagrangian iteration step is\t" << (Nloop-1) << std::endl;
         }
 
         //Gas-phase solver:
@@ -275,9 +280,9 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
                 newton().setOptions(m_ss_jac_age);
                 debuglog("Attempt Newton solution of steady-state problem...", loglevel);
 
-                if(ifAddSpraySource){
-                    setInletGasFlow();
-                }
+                // if(ifAddSpraySource){
+                //     setInletGasFlow();
+                // }
 
                 int status = newtonSolve(loglevel-1);
                 if (status == 0) {
@@ -379,8 +384,7 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
         // convg = cloud->evalRsd(Nloop, m_x);
         convg = cloud->evalResidual(Nloop, ifAddSpraySource, m_x);
         
-        std::cout << "\n>>>>>>>>>>>>>>>>>>>>>"
-                << "The Lagrangian iteration step is\t" << Nloop << std::endl;
+        std::cout << "\n>>>>>>>>>>>\t"<< "The Lagrangian iteration step is\t" << Nloop << std::endl;
 
         Nloop++;
 
