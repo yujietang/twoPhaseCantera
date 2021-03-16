@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-# filename3 = './result/nospray_domain5_mesh800.csv'
+filename3 = './result/2way_d20.csv'
 filename2 = './result/nheptane_d20.csv'
 filename1 = './result/nheptane_phi09_nospray_mesh400.csv'
 filename0 = './result/nheptane_phi09_meshrefined.csv'
@@ -52,12 +52,10 @@ T2 = data2[1]
 U2 = data2[2]
 fuel2 = data2[3]
 
-# data3 = np.loadtxt(filename3, delimiter=',', skiprows=1)
-# data3 = np.transpose(data3)
-# grid3 = data3[0]
-# T3 = data3[1]
-# U3 = data3[2]
-# fuel3 = data3[3]
+data3 = np.loadtxt(filename3, delimiter=',', skiprows=1)
+data3 = np.transpose(data3)
+grid3 = data3[1]
+d3 = data3[2]
 
 #temperature plot:
 # plt.scatter(grid0, T0, label='$no spray$',c ='k', s=20)
@@ -71,7 +69,7 @@ plt.scatter(grid_0, T_0, label='$Exp.$ $no$ $spray$',c ='k')
 plt.plot(grid0-0.0017, T0, label='$refined$ $mesh$',c ='k')
 plt.plot(grid1-0.0017, T1, label='$mesh = 400$',c ='b')
 plt.plot(grid2-0.0017, T2, label='$d=25_no Species$',c ='g')
-# plt.plot(grid3-0.002, T3, label='$mesh = 2000$',c='b',ls=':')
+plt.plot(grid3, d3, label='$droplet$ $diameter$',c='b',ls=':')
 
 #Yfuel plot:
 # plt.scatter(grid0, fuel0, label='$Y_{ethanol}$ $no spray$',c ='k', s=20)

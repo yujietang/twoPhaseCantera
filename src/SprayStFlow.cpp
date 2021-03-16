@@ -439,19 +439,11 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
                 //spray 2-way coupled:
                 if(spray_source){
-                    rsd[index(c_offset_Y + k,j)] += (cloud->mtf(j))*Y(x,k,j)/m_rho[j];
+                    rsd[index(c_offset_Y + k,j)] += (cloud->mtf(j)/m_dz[j])*Y(x,k,j)/m_rho[j];
                     if(k==45)
                     {
-                        rsd[index(c_offset_Y + k,j)] += (-cloud->mtf(j))/m_rho[j];                    
+                        rsd[index(c_offset_Y + k,j)] += (-cloud->mtf(j)/m_dz[j])/m_rho[j];                    
                     }
-                    // if(k==45){
-                    //     doublereal Sspef = (1.0-Y_prev(k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                    //     rsd[index(c_offset_Y + k,j)] -= Sspef;
-                    // }
-                    // else{
-                    //     doublereal Sspe = (0.0-Y_prev(k,j))*cloud->mtf(j)/m_dz[j]/m_rho[j];
-                    //     rsd[index(c_offset_Y + k,j)] -= Sspe;
-                    // }
                 }
 
                 diag[index(c_offset_Y + k, j)] = 1;
@@ -987,7 +979,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j-1];
-                // rsd[index(c_offset_U,j)] -= (cloud->mtf(j) - cloud->mtf(j-1))/m_dz[j-1];
             }
             /*****************************************/
         } 
@@ -998,9 +989,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
                 rsd[index(c_offset_U,j)] = (rho_u(x,j)
                                             - m_rho[0]*0.3);
             }
-            // if(spray_source){
-            //     rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
-            // }
         } 
         else if (grid(j) < m_zfixed) {
             rsd[index(c_offset_U,j)] =
@@ -1010,7 +998,6 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
-                // rsd[index(c_offset_U,j)] -= (cloud->mtf(j+1) - cloud->mtf(j))/m_dz[j];
             }
             /*****************************************/
 

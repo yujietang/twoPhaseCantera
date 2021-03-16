@@ -11,24 +11,25 @@ Lagrangian::Lagrangian(
    const doublereal parcelDiameter,
    const doublereal TInjection,
    const doublereal pinjection,
-   const doublereal lagrangianTimeStep,
-   const doublereal Mdotinjection,
    const doublereal injectionPosition,
+   const doublereal phi_gas,
+   const doublereal phi_over,
+   const doublereal fa_st_mass,
    const size_t fuelIndex
 ) :
     Thermo(0),
     fuel(pinjection),
     d_inj(parcelDiameter),
     Tp_inj(TInjection),
-    Mdotp_inj(Mdotinjection),
     z_inj(injectionPosition),
+    Phi_over(phi_over),
+    Phi_gas(phi_gas),
+    fa_st_m(fa_st_mass),
     kf(fuelIndex),
     p_inj(pinjection),
-    Nd(0),
     Np(1),
-    dtlag(lagrangianTimeStep),
     gas(0),
-    small(1.0e-13)
+    small(1.0e-14)
 {
     Thermo = ph;
     setupInjection(d_inj, 
@@ -37,12 +38,8 @@ Lagrangian::Lagrangian(
     std::cout << "\n>>>>>>>>>>>>>> Parcel Initialization <<<<<<<<<<<<<" << std::endl;
     std::cout << "injection temperature = " << Tp_inj << std::endl;
     std::cout << "injection pressure = " << p_inj << std::endl;
-    std::cout << "liquid mass flow rate = " << Mdotp_inj << std::endl;
     std::cout << "droplet mass = " << Md_inj << std::endl;
-    std::cout << "droplet number = " << Nd << std::endl;
     std::cout << "parcel's diameter = " << d_inj << std::endl;
-    std::cout << "parcel's mass = " << Nd*Md_inj << std::endl;
-    std::cout << "dt_lag = " << dtlag << std::endl;
 }
 
 void Lagrangian::setupInjection(
@@ -54,8 +51,6 @@ void Lagrangian::setupInjection(
     doublereal Rhop_inj = fuel.rho(Tp_inj);
     doublereal Vd_inj = Pi*std::pow(d_inj, 3.0)/6.0;
     Md_inj = Rhop_inj*Vd_inj;
-    Nd = 1.0*Mdotp_inj*dtlag/Md_inj;// [-]
-    std::cout << ">>>>>>\t"<< Nd <<"\tparticles per parcel\t<<<<<<\n"<< std::endl;
 }
 
 void Lagrangian::evalGasFlow(const vector_fp& solution)
@@ -89,11 +84,23 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
             }
         }
     }
+    //get the laminar flame speed
+    Sl = ug[0];
+    rho_inlet = rhog[0];
+    umax = *max_element(ug.begin(),ug.end());
+    std::cout << "\nthe max velocity is\t" << umax << std::endl;
+    std::cout << "\nthe spray flame speed is\t" << Sl << "\n" << std::endl;
+    // for(int k=0; k<Tg.size();++k){
+    //     std::cout <<"@ k" << k << "\t" << Tg[k]<<"\t\t" << rhog[k] 
+    //             <<"\t\t" << ug[k]  <<std::endl;
+    // }
 }
 
 void Lagrangian::inject(doublereal injectionPosition)
 {
-    xp.push_back(injectionPosition - z[0]);
+    double xp_inj = injectionPosition - z[0];
+    double up_inj = intpfield(ug, z, (injectionPosition - z[0]));
+    xp.push_back(xp_inj);
     mp.push_back(Md_inj);
     Tp.push_back(Tp_inj);
     up.push_back(ug[0]);
@@ -101,11 +108,16 @@ void Lagrangian::inject(doublereal injectionPosition)
     rhop.push_back(fuel.rho(Tp_inj));
 
     mtfd_.push_back(0.0);
-    htfp_.push_back(0.0);
+    htfd_.push_back(0.0);
     mtfp_.push_back(0.0);
     htfp_.push_back(0.0);
 
     Np = 1;
+    dtlag = Co*(z[1]-z[0])/umax;
+    Nd = dtlag*(rho_inlet*Sl/(1+fa_st_m*Phi_gas)*(Phi_over-Phi_gas)*fa_st_m/Md_inj);
+    std::cout << "\n>>>>>>>>>>>>>>>>>>>> injection velocity = " << up_inj << std::endl;
+    std::cout << "\n>>>>>>>>>>>>>>>>>>>> Nd = " << Nd << std::endl;
+    std::cout << "\n>>>>>>>>>>>>>>>>>>>> dtlag = " << dtlag <<"\n"<< std::endl;
 }
 
 void Lagrangian::evalParcelFlow()
@@ -154,14 +166,14 @@ void Lagrangian::solve()
 
     for(size_t n=1; n<marchingStep; ++n)
     {
-        if((dp.back()<0) || (mp.back()<0) || (_xp > gas->zmax()))
+        if((dp.back()< small) || (mp.back()< small) || (_xp > gas->zmax()))
         {
             break;
         }
 
         if(up[0]<0.01)
         {
-            std::cerr << "extinction happens!!!\n\n";
+            std::cerr << "Extinction happens!!!\n\n";
             exit(0);
         }
 
@@ -259,30 +271,18 @@ void Lagrangian::evalTransf()
     
     for(size_t iz = 0; iz < z.size()-1; ++iz)
     {
-        dz = z[iz+1] - z[iz];
+        dz = z[iz+1] - z[iz] + small;
         leftz = z[iz];
         rightz = z[iz+1];
-        for(size_t ip = 1; ip < Np-1; ++ip)
+        for(size_t ip = 0; ip < Np; ++ip)
         {
-            if(xp[ip-1] >= leftz && xp[ip] >= leftz && xp[ip] <= rightz && xp[ip+1]<=rightz){
+            if(xp[ip] >= leftz && xp[ip] <= rightz){
                 leftLength = xp[ip] - z[iz];
                 rightLength = z[iz+1] - xp[ip];
                 mtf_[iz] += mtfp_[ip]*(rightLength/dz);
                 mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
                 htf_[iz] += htfp_[ip]*(rightLength/dz); 
                 htf_[iz+1] += htfp_[ip]*(leftLength/dz);
-            }
-            else if(xp[ip-1] < leftz && xp[ip] > leftz){
-                rightLength = xp[ip] - leftz;
-                mtf_[iz] += mtfp_[ip]*(rightLength/(xp[ip] - xp[ip-1]));
-                // mtf_[iz+1] += mtfp_[ip]*((xp[ip]-leftz)/dz);
-                htf_[iz] += htfp_[ip]*(rightLength/(xp[ip] - xp[ip-1]));
-                // mtf_[iz+1] += htfp_[ip]*((xp[ip]-leftz)/dz); 
-            }
-            else if(xp[ip] < rightz && xp[ip+1] > rightz){
-                leftLength = rightz - xp[ip];
-                mtf_[iz] += mtfp_[ip]*(leftLength/(xp[ip+1] - xp[ip]));
-                htf_[iz] += htfp_[ip]*(leftLength/(xp[ip+1] - xp[ip])); 
             }
             else{
                 mtf_[iz] += 0.0;
@@ -292,9 +292,9 @@ void Lagrangian::evalTransf()
             }
         }
     }
+    // std::cout << "\t\tmtf_ \t\thtf_" << std::endl;
     // for(size_t ii=0;ii<mtf_.size();++ii){
-    //     std::cout << "mtf_[ " << ii << " ] = " << mtf_[ii] 
-    //               << ", \tmtfOld_[" << ii << "] = " << mtfOld_[ii] << std::endl;
+    //     std::cout << "@" << ii << "\t" << mtf_[ii] << "\t\t\t\t" << htf_[ii] << std::endl;
     // }
 }
 
@@ -332,6 +332,9 @@ void Lagrangian::clearGasFlow(bool do_spray)
         }            
     }
     else{
+        mtf_.resize(gas->grid().size(), 0.0);
+        htf_.resize(gas->grid().size(), 0.0);
+        
         mtfOld_.resize(gas->grid().size(), 0.0);
         htfOld_.resize(gas->grid().size(), 0.0);
     }
@@ -728,24 +731,19 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     doublereal qd = hTransfdot - mddot_*fuel.Lv(Td);
 
     doublereal Tls = ((Ts>fuel.Tb()) ? fuel.Tb() : Ts);
-    // //vapour enthalpy:
-    // doublereal hv = cps*(Tls - Td);
-    // doublereal Hv = mddot_*hv;
-    // //fuel vapour enthalpy:
-    // doublereal hf = cps*(Tinf - Td);
-    // doublereal Hf = mddot_*hf;
-     
-    // return qd + mddot_*fuel.cpg(0.5*(Tinf+Ts))*(Td-Tinf);
-    return qd;
+    // std::cout <<"\n"<< n <<"\t"<< qd << "\t"
+    //         << qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls) << "\t"
+    //         << std::endl;
+    return qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls) ;
 }
 
 void Lagrangian::write() const
 {
     double t = 0;
-    std::ofstream fout1("./result/2way_d20.csv");
+    std::ofstream fout1("./result/2way_d50.csv");
     fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
-        if((ip%5) == 0){
+        if((ip%1) == 0){
             fout1 << (t+ip*dtlag) << ","
                 << xp[ip] << ","
                 << dp[ip]*(1e+6) << ","

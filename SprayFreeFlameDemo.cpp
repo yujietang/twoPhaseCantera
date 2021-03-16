@@ -10,7 +10,7 @@
 using namespace Cantera;
 using fmt::print;
 
-doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_spray)
+doublereal SprayFreeFlame(bool do_spray)
 {
     /************************************************************/
     //                       Injection
@@ -18,12 +18,11 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     doublereal parcelDiameter(20e-6);            // injection droplet diameter [m]
     doublereal injTemperature(300);              // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm);          // injection pressure [Pa]
-    doublereal injectionPosition(0.008);
-    const doublereal CoLag = 0.01;               //Lagrangian Co number
+    doublereal injectionPosition(0.0);
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 400;          // Mesh Point Number
+    const size_t meshPointNumber = 20;          // Mesh Point Number
     const doublereal domainLength = 0.02;        // Domain Length
     bool refine_grid = false;                    // Refined mesh has been turned off
     /************************************************************/
@@ -31,8 +30,8 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     /************************************************************/
     const doublereal temp = 300.0;              // inlet gas flow temperature [K]
     const doublereal pressure = 1.0*OneAtm;     // inlet gas flow pressure [atm]
-    const doublereal overallEqRatio = 1.0;      // overall equivalence ratio
     const doublereal phi = 0.8;                 // gas flow equivalence ratio
+    const doublereal phi_over = 0.9;
     /************************************************************/
     //                        Chemistry(for ethanol)
     /************************************************************/
@@ -80,31 +79,12 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     // x[gas.speciesIndex("AR")] = 0.01;
     /************************************************************/
 
-    /************************************************************/
-    doublereal uf = flamespeed; //laminar flame speed;
-    doublereal uin = uf; // initial guess of inlet velocity [m/s]
+    doublereal uin = 0.3; // initial guess of inlet velocity [m/s]
     gas.setState_TPX(temp, pressure, x.data());
     doublereal rho_in = gas.density();
     std::cout << "inlet rhog = " << rho_in << std::endl;
     vector_fp yin(nsp);
     gas.getMassFractions(&yin[0]);
-
-    /***************Evaluate the liquid mass flux***************/
-    doublereal Mdot_gas = rho_in*uf;
-    doublereal Mdot_air = Mdot_gas/(fa_stoic_mass*phi+1);
-    doublereal Mdot_fuel = Mdot_gas - Mdot_air;
-    doublereal Mdot_liquid = (rho_in*uf/(1+fa_stoic_mass*phi))*(phi_over-phi)*fa_stoic_mass;
-
-    std::cout << "The intermediate flame speed is " <<  uf << std::endl; 
-    std::cout << "gas mass flux = " << Mdot_gas << std::endl;
-    std::cout << "fuel vapour mass flux = " << Mdot_fuel << std::endl;
-    std::cout << "liquid mass flux = " << Mdot_liquid << std::endl;
-    /***********************************************************/
-
-    /*******************Evaluate the tracking time scale******************/
-    doublereal dtlag = CoLag*(domainLength/meshPointNumber)/uf;
-    std::cout << "The lagrangian time step is " << dtlag << std::endl;
-    /*********************************************************************/
     gas.equilibrate("HP");//evaluate the adiabatic flame temperature.
     vector_fp yout(nsp);
     gas.getMassFractions(&yout[0]);
@@ -118,9 +98,10 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
         parcelDiameter,
         injTemperature,
         injPressure,
-        dtlag,
-        Mdot_liquid,
         injectionPosition,
+        phi,
+        phi_over,
+        fa_stoic_mass,
         fuelIndex);
 
     /**********Eulerian Flow**********/
@@ -244,7 +225,7 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nheptane_d20.csv", std::ios::trunc);
+    std::ofstream outfile("./result/nheptane_d50.csv", std::ios::trunc);
 
     outfile << "  Grid,   Temperature,   Uvec,  C7H16, O2, CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
@@ -259,8 +240,6 @@ doublereal SprayFreeFlame(doublereal flamespeed, doublereal phi_over, bool do_sp
 
 int main()
 {
-    doublereal phi_over = 0.9;
-
     // print("Enter overall Phi : ");
     // std::cin >> phi_over;
 
@@ -277,10 +256,8 @@ int main()
     //     rsd = abs(flamespeed_New - flamespeed_Old)/(flamespeed_Old + 1e-14);
     //     flamespeed_Old = flamespeed_New;  
     // }while(rsd > 1e-4);
-
-    doublereal flamespeed = 0.3;
-
-    flamespeed = SprayFreeFlame(flamespeed, phi_over, true);
+    double flamespeed;
+    flamespeed = SprayFreeFlame(true);
 
     std::cout << "\nSpray flame speed is \t" << flamespeed << std::endl;
     return 0;

@@ -7,6 +7,7 @@
 #include <ostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 #include "cantera/base/global.h"
 #include "cantera/thermo/IdealGasPhase.h"
 #include "SprayStFlow.h"
@@ -24,9 +25,10 @@ class Lagrangian
                    const doublereal parcelDiameter,
                    const doublereal TInjection,
                    const doublereal pinjection,
-                   const doublereal lagrangianTimeStep,
-                   const doublereal Mdotinjection,
                    const doublereal injectionPosition,
+                   const doublereal phi_gas,
+                   const doublereal phi_over,
+                   const doublereal fa_st_mass,
                    const size_t fuelIndex);
 
         //set up the injection properties:
@@ -159,10 +161,7 @@ class Lagrangian
         NC7H16 fuel;
 
         doublereal small;
-
         // //evaluate residual:
-        // doublereal Told;
-        // doublereal Tnew;
         vector_fp TOld_;
         vector_fp TNew_;
         
@@ -179,7 +178,12 @@ class Lagrangian
         std::vector<std::string> fuelName_;
         std::vector<size_t> fuelIndex_;
         std::vector<vector_fp> Yg;
-
+        doublereal Sl;//laminar flame speed
+        doublereal rho_inlet;
+        doublereal umax;//max gas velocity
+        doublereal fa_st_m;
+        doublereal Phi_over;
+        doublereal Phi_gas;
         //parcel:
         vector_fp dp;
         vector_fp mp;
@@ -208,7 +212,6 @@ class Lagrangian
         doublereal Vold_inj; //injection droplet volume.
         doublereal Md_inj; //injection droplet mass. 
         doublereal dtlag; //evaporation time step.
-        doublereal Ndot; //number of parcels per second. [1/s]
 
         //transport quantities of parcel:
         vector_fp mtfd_;//mass transfer of droplet
@@ -227,6 +230,7 @@ class Lagrangian
         //some const:
         const doublereal RR = 8314.0;
         const doublereal aa = 0.1; //relaxation factor
+        const doublereal Co = 0.1; //Corrent number of lagrangian
 };
 }
 
