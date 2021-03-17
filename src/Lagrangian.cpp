@@ -111,6 +111,10 @@ void Lagrangian::inject(doublereal injectionPosition)
     htfd_.push_back(0.0);
     mtfp_.push_back(0.0);
     htfp_.push_back(0.0);
+    for(size_t k=0;k<gas->nsp();++k){
+        stfp_[k].push_back(0.0);
+    }
+    
 
     Np = 1;
     dtlag = Co*(z[1]-z[0])/umax;
@@ -185,7 +189,7 @@ void Lagrangian::solve()
         //          << "Parcel's position = " << xp.back() << "\n" << std::endl;
         
         evalParcelFlow();
-
+        
         //parcel's mass:
         mp.push_back(
             mp[n-1] + dtlag*mddot(n-1)
@@ -238,6 +242,12 @@ void Lagrangian::solve()
             htfp(n)
         );
 
+        for(size_t k=0; k<gas->nsp(); ++k){
+            stfp_[k].push_back(
+                stfp(k,n)
+            );
+        }
+
         ++Np;
 
         if(Np != mp.size()){
@@ -252,17 +262,22 @@ void Lagrangian::recordOldValue()
     for(size_t ii = 0; ii < mtf_.size(); ++ii){
         mtfOld_[ii] = mtf(ii);
         htfOld_[ii] = htf(ii);
+        for(size_t k=0;k<gas->nsp();++k){
+            stfOld_[k][ii] = stf(k, ii);
+        }
     }
 }
 
 void Lagrangian::evalTransf()
 {
     this->recordOldValue();
-    
     //resize the vector of quantities transfer:
     htf_.resize(z.size(), 0.0);
     mtf_.resize(z.size(), 0.0);//TODO: multi-component case is a 2d vector.
-
+    stf_.resize(gas->nsp());
+    for(size_t k=0;k<gas->nsp();++k){
+        stf_[k].resize(z.size(), 0.0);
+    }
     doublereal leftz;
     doublereal rightz;
     doublereal leftLength;
@@ -283,12 +298,25 @@ void Lagrangian::evalTransf()
                 mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
                 htf_[iz] += htfp_[ip]*(rightLength/dz); 
                 htf_[iz+1] += htfp_[ip]*(leftLength/dz);
+                for(size_t k=0;k<gas->nsp();++k){
+                    if(k==kf){
+                        stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
+                        stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
+                    }else{
+                        stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
+                        stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
+                    }
+                }
             }
             else{
                 mtf_[iz] += 0.0;
                 mtf_[iz+1] += 0.0;
                 htf_[iz] += 0.0;
                 htf_[iz+1] += 0.0;
+                for(size_t k=0;k<gas->nsp();++k){
+                    stf_[k][iz] += 0.0;
+                    stf_[k][iz+1] += 0.0;
+                }
             }
         }
     }
@@ -311,12 +339,28 @@ void Lagrangian::clearParcel()
     htfd_.clear();
     mtfp_.clear();
     htfp_.clear();
+    stfp_.resize(gas->nsp());
+    for(size_t k=0;k<gas->nsp();++k){
+        stfp_[k].clear();
+    }
     std::cout << "====== Parcels has been cleared up! ======\n"<< std::endl;
 }
 
 void Lagrangian::clearGasFlow(bool do_spray)
-{
+{   
     if(do_spray == true){
+        //record species fraction:
+        Ygtmp.resize(gas->nsp());
+        for(int k=0;k<Ygtmp.size();++k){
+            for(int j=0;j<Yg[k].size();++j){
+                Ygtmp[k].resize(Yg.size(),0.0);
+            }
+        }
+        for(int k=0;k<Ygtmp.size();++k){
+            for(int j=0;j<Yg[k].size();++j){
+                Ygtmp[k][j] = Yg[k][j];
+            }
+        }
         //clear gas flow:
         z.clear();
         ug.clear();
@@ -334,9 +378,19 @@ void Lagrangian::clearGasFlow(bool do_spray)
     else{
         mtf_.resize(gas->grid().size(), 0.0);
         htf_.resize(gas->grid().size(), 0.0);
+        stf_.resize(gas->nsp());
+        for(size_t k=0; k<gas->nsp();++k){
+            stf_[k].resize(gas->grid().size(), 0.0);
+        }
         
         mtfOld_.resize(gas->grid().size(), 0.0);
         htfOld_.resize(gas->grid().size(), 0.0);
+        stfOld_.resize(gas->nsp());
+        Ygtmp.resize(gas->nsp());
+        for(size_t k=0; k<gas->nsp();++k){
+            stfOld_[k].resize(gas->grid().size(), 0.0);
+            Ygtmp[k].resize(gas->grid().size(), 0.0);
+        }
     }
 }
 
@@ -734,7 +788,8 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     // std::cout <<"\n"<< n <<"\t"<< qd << "\t"
     //         << qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls) << "\t"
     //         << std::endl;
-    return qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls) ;
+    return qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls);
+    // return qd + mddot_*fuel.Lv(Td); 
 }
 
 void Lagrangian::write() const

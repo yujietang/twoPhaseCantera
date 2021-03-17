@@ -96,6 +96,11 @@ class Lagrangian
 
         doublereal hTransRate(size_t n);
 
+        doublereal Ygas(size_t k, size_t j) const
+        {
+            return Ygtmp[k][j];
+        }
+
         //mass transfer rate for one parcel at position xp_n:
         doublereal mtfp(size_t n)
         {
@@ -108,6 +113,16 @@ class Lagrangian
             return Nd*hTransRate(n);
         }
 
+        doublereal stfp(size_t k, size_t n)
+        {
+            if(k==kf){
+                return -Nd*mddot(n);
+            }
+            else{
+                return Nd*mddot(n);
+            }
+        }
+
         //mass transfer rate at grid points j [kg/s]:
         doublereal mtf(size_t j) const
         {
@@ -117,6 +132,11 @@ class Lagrangian
         doublereal htf(size_t j) const
         {
             return aa*htf_[j] + (1-aa)*htfOld_[j];
+        }
+
+        doublereal stf(size_t k, size_t j) const
+        {
+            return aa*stf_[k][j] + (1-aa)*stfOld_[k][j];
         }
 
         void setFuel(const std::vector<std::string>& fuelName)
@@ -178,6 +198,7 @@ class Lagrangian
         std::vector<std::string> fuelName_;
         std::vector<size_t> fuelIndex_;
         std::vector<vector_fp> Yg;
+        std::vector<vector_fp> Ygtmp;
         doublereal Sl;//laminar flame speed
         doublereal rho_inlet;
         doublereal umax;//max gas velocity
@@ -218,14 +239,17 @@ class Lagrangian
         vector_fp htfd_;//mass transfer of droplet
         vector_fp mtfp_;//mass transfer of parcel
         vector_fp htfp_;//heat transfer of parcel 
+        std::vector<std::vector<doublereal>> stfp_;//species transfer of parcel
 
         //feedback from lagrangian field to Eulerian field:
         vector_fp mtf_; //mass transfer
         vector_fp htf_; //heat transfer
+        std::vector<std::vector<doublereal>> stf_; //species transfer
 
         //source term in the last iteration step:
         vector_fp mtfOld_;
         vector_fp htfOld_;
+        std::vector<std::vector<doublereal>> stfOld_;
 
         //some const:
         const doublereal RR = 8314.0;
