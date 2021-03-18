@@ -502,12 +502,12 @@ int Sim1D::setFixedTemperature(doublereal t)
                     addnewpt = false;
                     break;
                 } else if ((value(n,2,m)<t) && (value(n,2,m+1)>t)) {
+                    std::cout << "## Add new point at the flame front ##" << std::endl;
                     z1 = d.grid(m);
                     m1 = m;
                     z2 = d.grid(m+1);
                     t1 = value(n,2,m);
                     t2 = value(n,2,m+1);
-
                     zfixed = (z1-z2)/(t1-t2)*(t-t2)+z2;
                     d_free->m_zfixed = zfixed;
                     d_free->m_tfixed = t;

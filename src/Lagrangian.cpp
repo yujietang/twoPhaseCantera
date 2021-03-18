@@ -108,18 +108,18 @@ void Lagrangian::inject(doublereal injectionPosition)
     dp.push_back(d_inj);
     rhop.push_back(fuel.rho(Tp_inj));
 
-    mtfd_.push_back(0.0);
-    htfd_.push_back(0.0);
-    mtfp_.push_back(0.0);
-    htfp_.push_back(0.0);
+    dtlag = Co*(z[1]-z[0])/up[0];
+    liquidMassFlux = rho_inlet*Sl/(1+fa_st_m*Phi_gas)*(Phi_over-Phi_gas)*fa_st_m;
+    Nd = dtlag*liquidMassFlux/Md_inj;
+
+    mtfd_.push_back(0);
+    htfd_.push_back(0);
+    mtfp_.push_back(0);
+    htfp_.push_back(0);
     for(size_t k=0;k<gas->nsp();++k){
         stfp_[k].push_back(0.0);
     }
-    
     Np = 1;
-    dtlag = Co*(z[1]-z[0])/umax;
-    // dtlag = 4e-6;
-    Nd = dtlag*(rho_inlet*Sl/(1+fa_st_m*Phi_gas)*(Phi_over-Phi_gas)*fa_st_m/Md_inj);
     std::cout << "\n>>>>>>>>>>>>>>>>>>>> injection velocity = " << up_inj << std::endl;
     std::cout << "\n>>>>>>>>>>>>>>>>>>>> Nd = " << Nd << std::endl;
     std::cout << "\n>>>>>>>>>>>>>>>>>>>> dtlag = " << dtlag <<"\n"<< std::endl;
@@ -166,6 +166,8 @@ void Lagrangian::solve()
     doublereal _rhog = rhog[0];
     doublereal _mug = mug[0];
     doublereal _Red;
+    doublereal zl, zr;
+    size_t jl, jr;
 
     size_t marchingStep = 2e+5;    //tracking step n:
 
@@ -175,7 +177,7 @@ void Lagrangian::solve()
         {
             break;
         }
-
+        
         if(up[0]<0.01)
         {
             std::cerr << "Extinction happens!!!\n\n";
@@ -184,6 +186,14 @@ void Lagrangian::solve()
 
         _xp += up[n-1]*dtlag;
 
+        jl = lower_bound(z.begin(), z.end(), _xp) - z.begin() - 1;
+        jr = lower_bound(z.begin(), z.end(), _xp) - z.begin();
+        zl = z[jl];
+        zr = z[jr];
+
+        dtlag = Co*(z[jr]-z[jl])/up[n-1];
+        Nd = dtlag*liquidMassFlux/Md_inj;
+        
         //parcel's position:
         xp.push_back(_xp);
         // std::cout << "Tracking time = " << time + (n-1)*dtlag << ",\t"
@@ -235,13 +245,23 @@ void Lagrangian::solve()
         );
         /******For parcel******/
         //mass transfer:
-        mtfp_.push_back(
-            mtfp(n)
-        );
-        //heat transfer:
-        htfp_.push_back(
-            htfp(n)
-        );
+        if(jl == ((z.size()-1)/2)-1 || jl == ((z.size()-1)/2)){
+            mtfp_.push_back(
+                2*mtfp(n)
+            );
+            //heat transfer:
+            htfp_.push_back(
+               2*htfp(n)
+            );
+        }else{
+            mtfp_.push_back(
+                mtfp(n)
+            );
+            //heat transfer:
+            htfp_.push_back(
+                htfp(n)
+            );
+        }
 
         for(size_t k=0; k<gas->nsp(); ++k){
             stfp_[k].push_back(
@@ -256,8 +276,6 @@ void Lagrangian::solve()
             exit(0);
         }
     }
-
-
 }
 
 void Lagrangian::recordOldValue()
@@ -286,84 +304,47 @@ void Lagrangian::evalTransf()
     doublereal leftLength;
     doublereal rightLength;
     doublereal dz;
-    size_t izfixed = z.size()*0.5;//if grid is even number;
+    size_t izfixed = (z.size()-1)/2;//if grid is even number;
     doublereal zfixed;
     
     for(size_t iz = 0; iz < z.size()-1; ++iz)
     {
-        if((iz < (izfixed-1)) || (iz >= (izfixed+1)))
+        dz = z[iz+1] - z[iz] + small;
+        // dz = z[1] - z[0];
+        leftz = z[iz];
+        rightz = z[iz+1];
+        for(size_t ip = 0; ip < Np; ++ip)
         {
-            dz = z[iz+1] - z[iz] + small;
-            // dz = z[1] - z[0];
-            leftz = z[iz];
-            rightz = z[iz+1];
-            for(size_t ip = 0; ip < Np; ++ip)
-            {
-                if(xp[ip] >= leftz && xp[ip] <= rightz){
-                    leftLength = xp[ip] - z[iz];
-                    rightLength = z[iz+1] - xp[ip];
-                    mtf_[iz] += mtfp_[ip]*(rightLength/dz);
-                    mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
-                    htf_[iz] += htfp_[ip]*(rightLength/dz); 
-                    htf_[iz+1] += htfp_[ip]*(leftLength/dz);
-                    for(size_t k=0;k<gas->nsp();++k){
-                        if(k==kf){
-                            stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
-                            stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
-                        }else{
-                            stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
-                            stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
-                        }
-                    }
-                }
-                else{
-                    mtf_[iz] += 0.0;
-                    mtf_[iz+1] += 0.0;
-                    htf_[iz] += 0.0;
-                    htf_[iz+1] += 0.0;
-                    for(size_t k=0;k<gas->nsp();++k){
-                        stf_[k][iz] += 0.0;
-                        stf_[k][iz+1] += 0.0;
+            if(xp[ip] >= leftz && xp[ip] <= rightz){
+                leftLength = xp[ip] - z[iz];
+                rightLength = z[iz+1] - xp[ip];
+                /***************************************/
+                mtf_[iz] += mtfp_[ip]*(rightLength/dz);
+                mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
+                htf_[iz] += htfp_[ip]*(rightLength/dz); 
+                htf_[iz+1] += htfp_[ip]*(leftLength/dz);
+                /***************************************/
+                for(size_t k=0;k<gas->nsp();++k){
+                    if(k==kf){
+                        stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
+                        stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
+                    }else{
+                        stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
+                        stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
                     }
                 }
             }
-        }
-        else
-        {
-            dz = z[izfixed] - z[izfixed-1];
-            leftz = z[iz];
-            rightz = z[iz+1];
-            for(size_t ip = 0; ip < Np; ++ip)
-            {
-                if(xp[ip] >= leftz && xp[ip] <= rightz){
-                    leftLength = xp[ip] - z[iz];
-                    rightLength = z[iz+1] - xp[ip];
-                    mtf_[iz] += 2*mtfp_[ip]*(rightLength/dz);
-                    mtf_[iz+1] += 2*mtfp_[ip]*(leftLength/dz);
-                    htf_[iz] += 2*htfp_[ip]*(rightLength/dz); 
-                    htf_[iz+1] += 2*htfp_[ip]*(leftLength/dz);
-                    for(size_t k=0;k<gas->nsp();++k){
-                        if(k==kf){
-                            stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
-                            stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
-                        }else{
-                            stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
-                            stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
-                        }
-                    }
-                }
-                else{
-                    mtf_[iz] += 0.0;
-                    mtf_[iz+1] += 0.0;
-                    htf_[iz] += 0.0;
-                    htf_[iz+1] += 0.0;
-                    for(size_t k=0;k<gas->nsp();++k){
-                        stf_[k][iz] += 0.0;
-                        stf_[k][iz+1] += 0.0;
-                    }
+            else{
+                mtf_[iz] += 0.0;
+                mtf_[iz+1] += 0.0;
+                htf_[iz] += 0.0;
+                htf_[iz+1] += 0.0;
+                for(size_t k=0;k<gas->nsp();++k){
+                    stf_[k][iz] += 0.0;
+                    stf_[k][iz+1] += 0.0;
                 }
             }
-        }
+        }    
     }
     // std::cout << "\t\tmtf_ \t\thtf_" << std::endl;
     // for(size_t ii=0;ii<mtf_.size();++ii){
@@ -645,7 +626,6 @@ doublereal Lagrangian::mddot(size_t n) //[kg/s]
 doublereal Lagrangian::mddot_th(size_t n)
 {
     const doublereal MWf = mw[kf];//TODO:only for ethanol
-    //all parameters needed:
     doublereal Ni;
     doublereal kc;
     doublereal Cs;
@@ -866,7 +846,7 @@ void Lagrangian::write() const
     //output the one way couple information:
     double t = 0;
     std::ofstream fout1("./result/1way.csv");
-    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s], rho[kg/m3s]" << std::endl;
+    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], mtfd, htfd, Sm [kg/m3s], Sh [J/m3s], rho[kg/m3s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%1) == 0){
             fout1 << (t+ip*dtlag) << ","
@@ -877,6 +857,8 @@ void Lagrangian::write() const
                 << Tp[ip] << ","
                 << T_[ip] << ","
                 << u_[ip] << ","
+                << mtfd_[ip] << ","
+                << htfd_[ip] << ","
                 << mtfp_[ip] << ","
                 << htfp_[ip] << ","
                 << rhop[ip] <<std::endl;
@@ -897,9 +879,11 @@ void Lagrangian::write() const
                 << Yg[10][iz] << ","
                 << Yg[11][iz] << ","
                 << Yg[30][iz]/(Yg[0][iz]+Yg[1][iz]+Yg[4][iz])/0.1113 << ","
-                << mtf(iz)/(z[iz+1]-z[iz]) << ","
+                // << mtf(iz)/(z[iz+1]-z[iz]) << ","
+                << mtf_[iz]/(z[iz+1]-z[iz]) << ","
                 // <<4.167e-3*exp(-(pow((z[iz] - 0.0025),2.0))/(2*2.779e-8))*(1/(1.667e-4*2.5066))<< ","
-                << htf(iz)/(z[iz+1]-z[iz]) << ","
+                // << htf(iz)/(z[iz+1]-z[iz]) << ","
+                << htf_[iz]/(z[iz+1]-z[iz]) << ","
                 // << 2375*exp(-(pow((z[iz] - 0.0025),2.0))/(2*2.778e-8))*(1/(1.667e-4*2.5066)) << ","
                 << (Yg[30][iz]*mtf(iz)/dz - mtf(iz)/dz)<< std::endl;
         }

@@ -234,6 +234,7 @@ class Lagrangian
         doublereal p_inj; //injection pressure.
         doublereal Vold_inj; //injection droplet volume.
         doublereal Md_inj; //injection droplet mass. 
+        doublereal liquidMassFlux;
         doublereal dtlag; //evaporation time step.
 
         //transport quantities of parcel:
