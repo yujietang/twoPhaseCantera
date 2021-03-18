@@ -365,7 +365,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
         //----------------------------------------------
         //         left boundary
         //----------------------------------------------
-
         if (j == 0) {
             // these may be modified by a boundary object
 
@@ -437,10 +436,10 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 = (m_wt[k]*(wdot(k,j))
                    - convec - diffus)/m_rho[j]
                   - rdt*(Y(x,k,j) - Y_prev(k,j));
-                //spray 2-way coupled:
+                // spray 2-way coupled:
                 if(spray_source){
                     rsd[index(c_offset_Y + k,j)] += (cloud->mtf(j)/m_dz[j])*cloud->Ygas(k,j)/m_rho[j];
-                    if(k==45)
+                    if(k==30)
                     {
                         rsd[index(c_offset_Y + k,j)] += (-cloud->mtf(j)/m_dz[j])/m_rho[j];                    
                     }
@@ -479,16 +478,19 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 
                 rsd[index(c_offset_T, j)] /= (m_rho[j]*m_cp[j]);
                 rsd[index(c_offset_T, j)] -= rdt*(T(x,j) - T_prev(j));
-                //spray 2-way coupled:
+                // spray 2-way coupled:
                 if(spray_source){
                     rsd[index(c_offset_T, j)] -= ((cloud->htf(j)/m_dz[j]) / (m_rho[j] * m_cp[j]));
                     // std::cout << "@" << j << "\t" << cloud -> htf(j)/m_dz[j] << std::endl;  
+                    // rsd[index(c_offset_T, j)] -= 1882*exp(-(pow((grid(j) - 0.0028),2.0))/(2*2.778e-8))*(1/(1.667e-4*2.5066))
+                    // rsd[index(c_offset_T, j)] -= 6e+7;
                 }
                 rsd[index(c_offset_T, j)] -= (m_qdotRadiation[j] / (m_rho[j] * m_cp[j]));
                 diag[index(c_offset_T, j)] = 1;
             } else {
                 // residual equations if the energy equation is disabled
                 rsd[index(c_offset_T, j)] = T(x,j) - T_fixed(j);
+                std::cout << "The point that not do the energy! @\t" << j << std::endl;
                 diag[index(c_offset_T, j)] = 0;
             }
 
@@ -980,15 +982,23 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j-1];
+                // rsd[index(c_offset_U,j)] += 4.167e-3*exp(-(pow((grid(j) - 0.0025),2.0))/(2*2.779e-8))*(1/(1.667e-4*2.5066)); 
             }
             /*****************************************/
         } 
         else if (grid(j) == m_zfixed) {
             if (m_do_energy[j]) {
                 rsd[index(c_offset_U,j)] = (T(x,j) - m_tfixed);
+
+                // if(spray_source){
+                //     rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
+                // }
             } else {
                 rsd[index(c_offset_U,j)] = (rho_u(x,j)
                                             - m_rho[0]*0.3);
+                // if(spray_source){
+                //     rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
+                // }
             }
         } 
         else if (grid(j) < m_zfixed) {
@@ -999,6 +1009,7 @@ void StFlow::evalContinuity(size_t j, double* x, double* rsd, int* diag, double 
             /****** liquid source 2-way coupled ******/
             if(spray_source){
                 rsd[index(c_offset_U,j)] -= cloud->mtf(j)/m_dz[j];
+                // rsd[index(c_offset_U,j)] += 4.167e-3*exp(-(pow((grid(j) - 0.0025),2.0))/(2*2.779e-8))*(1/(1.667e-4*2.5066)); 
             }
             /*****************************************/
 

@@ -22,8 +22,8 @@ doublereal SprayFreeFlame(bool do_spray)
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 20;          // Mesh Point Number
-    const doublereal domainLength = 0.02;        // Domain Length
+    const size_t meshPointNumber = 200;          // Mesh Point Number
+    const doublereal domainLength = 0.005;        // Domain Length
     bool refine_grid = false;                    // Refined mesh has been turned off
     /************************************************************/
     //                        Gas Flow
@@ -35,41 +35,18 @@ doublereal SprayFreeFlame(bool do_spray)
     /************************************************************/
     //                        Chemistry(for ethanol)
     /************************************************************/
-    // IdealGasMix gas("Ethanol_57.cti", "gas");   //for single component of ethanol fuel:
-    // const size_t fuelIndex = 48;                //fuel index in ck file
-    // const doublereal C_atoms = 2.0;                   // C2H5OH
-    // const doublereal H_atoms = 6.0;                   // C2H5OH
-    // const doublereal O_atoms = 1.0;                   // C2H5OH
-    // size_t nsp = gas.nSpecies();                // number of species
-    // vector_fp x(nsp, 0.0);
-    // doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
-    // doublereal fa_stoic_mole = 1.0 / (4.77 * ax);        // fuel / air mole ratio at stoic state
-    // doublereal fa_stoic_mass = 0.1113;  
-    // // Species' mole fraction when the condition is fuel/oxidizer flow:
-    // x[gas.speciesIndex("C2H5OH")] = 1.0; 
-    // x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic_mole;
-    // x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic_mole;
-    // x[gas.speciesIndex("Ar")] = 0.01 / phi / fa_stoic_mole;
-    // // when the condition is pure air flow  (1 mole air):
-    // // x[gas.speciesIndex("O2")] = 0.21;
-    // // x[gas.speciesIndex("N2")] = 0.78;
-    // // x[gas.speciesIndex("AR")] = 0.01;
-    /************************************************************/
-    //                        Chemistry(for N-heptane)
-    /************************************************************/
-    IdealGasMix gas("nheptane106.cti", "gas");   //for single component of ethanol fuel:
-    // IdealGasMix gas("nheptane.cti", "gas");   //for single component of ethanol fuel: 
-    const size_t fuelIndex = 45;                //fuel index in ck file
-    const doublereal C_atoms = 7.0;                   // C2H5OH
-    const doublereal H_atoms = 16.0;                   // C2H5OH
-    const doublereal O_atoms = 0.0;                   // C2H5OH
+    IdealGasMix gas("Ethanol_31.cti", "gas");   //for single component of ethanol fuel:
+    const size_t fuelIndex = 30;                //fuel index in ck file
+    const doublereal C_atoms = 2.0;                   // C2H5OH
+    const doublereal H_atoms = 6.0;                   // C2H5OH
+    const doublereal O_atoms = 1.0;                   // C2H5OH
     size_t nsp = gas.nSpecies();                // number of species
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
-    doublereal fa_stoic_mole = 1.0 / (4.76 * ax);        // fuel / air mole ratio at stoic state
-    doublereal fa_stoic_mass = 0.0659277;  
+    doublereal fa_stoic_mole = 1.0 / (4.77 * ax);        // fuel / air mole ratio at stoic state
+    doublereal fa_stoic_mass = 0.1113;  
     // Species' mole fraction when the condition is fuel/oxidizer flow:
-    x[gas.speciesIndex("NC7H16")] = 1.0; 
+    x[gas.speciesIndex("C2H5OH")] = 1.0; 
     x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic_mole;
     x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic_mole;
     x[gas.speciesIndex("Ar")] = 0.01 / phi / fa_stoic_mole;
@@ -77,6 +54,29 @@ doublereal SprayFreeFlame(bool do_spray)
     // x[gas.speciesIndex("O2")] = 0.21;
     // x[gas.speciesIndex("N2")] = 0.78;
     // x[gas.speciesIndex("AR")] = 0.01;
+    /************************************************************/
+    //                        Chemistry(for N-heptane)
+    /************************************************************/
+    // IdealGasMix gas("nheptane106.cti", "gas");   //for single component of ethanol fuel:
+    // // IdealGasMix gas("nheptane.cti", "gas");   //for single component of ethanol fuel: 
+    // const size_t fuelIndex = 45;                //fuel index in ck file
+    // const doublereal C_atoms = 7.0;                   // C2H5OH
+    // const doublereal H_atoms = 16.0;                   // C2H5OH
+    // const doublereal O_atoms = 0.0;                   // C2H5OH
+    // size_t nsp = gas.nSpecies();                // number of species
+    // vector_fp x(nsp, 0.0);
+    // doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
+    // doublereal fa_stoic_mole = 1.0 / (4.76 * ax);        // fuel / air mole ratio at stoic state
+    // doublereal fa_stoic_mass = 0.0659277;  
+    // // Species' mole fraction when the condition is fuel/oxidizer flow:
+    // x[gas.speciesIndex("NC7H16")] = 1.0; 
+    // x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic_mole;
+    // x[gas.speciesIndex("N2")] = 0.78 / phi / fa_stoic_mole;
+    // x[gas.speciesIndex("Ar")] = 0.01 / phi / fa_stoic_mole;
+    // // when the condition is pure air flow  (1 mole air):
+    // // x[gas.speciesIndex("O2")] = 0.21;
+    // // x[gas.speciesIndex("N2")] = 0.78;
+    // // x[gas.speciesIndex("AR")] = 0.01;
     /************************************************************/
 
     doublereal uin = 0.3; // initial guess of inlet velocity [m/s]
@@ -181,57 +181,57 @@ doublereal SprayFreeFlame(bool do_spray)
             flameSpeed_mix);
     const vector_fp& solution = sprayflame.solutionVector();
 
-    // vector_fp zvec,Tvec,COvec,CO2vec,O2vec,N2vec,ARvec,C2H5OHvec,Uvec;
+    vector_fp zvec,Tvec,COvec,CO2vec,O2vec,N2vec,ARvec,C2H5OHvec,Uvec;
 
-    // print("\n{:9s}\t{:8s}\t{:5s}\t{:7s}\n",
-    //         "z (m)", "T (K)", "U (m/s)", "Y(CO)");
-    // for (size_t n = 0; n < gasflow.nPoints(); n++) {
-    //     Tvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("T"),n));
-    //     C2H5OHvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("C2H5OH"),n));
-    //     O2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("O2"),n));
-    //     N2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("N2"),n));
-    //     ARvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("AR"),n));
-    //     COvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO"),n));
-    //     CO2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO2"),n));
-    //     Uvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("u"),n));
-    //     zvec.push_back(gasflow.grid(n));
-    //     print("{:9.6f}\t{:8.3f}\t{:5.3f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\n",
-    //             gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n]);
-    // }
-
-    // print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
-    // print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
-
-    // std::ofstream outfile("./result/linj0.006.csv", std::ios::trunc);
-
-    // outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
-    // for (size_t n = 0; n < gasflow.nPoints(); n++) {
-    //     print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
-    //             gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n], CO2vec[n]);
-    // }
-
-    /*for C7H16 flame*/
-    vector_fp zvec,Tvec,CO2vec,O2vec,N2vec,ARvec,C7H16vec,Uvec;
-
+    print("\n{:9s}\t{:8s}\t{:5s}\t{:7s}\n",
+            "z (m)", "T (K)", "U (m/s)", "Y(CO)");
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
         Tvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("T"),n));
-        C7H16vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("NC7H16"),n));
+        C2H5OHvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("C2H5OH"),n));
         O2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("O2"),n));
+        N2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("N2"),n));
+        ARvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("AR"),n));
+        COvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO"),n));
         CO2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO2"),n));
         Uvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("u"),n));
         zvec.push_back(gasflow.grid(n));
+        print("{:9.6f}\t{:8.3f}\t{:5.3f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\t{:7.5f}\n",
+                gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n]);
     }
 
     print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
     print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
 
-    std::ofstream outfile("./result/nheptane_d50.csv", std::ios::trunc);
+    std::ofstream outfile("./result/linj0.006.csv", std::ios::trunc);
 
-    outfile << "  Grid,   Temperature,   Uvec,  C7H16, O2, CO2\n";
+    outfile << "  Grid,   Temperature,   Uvec,  C2H5OH, O2, N2, AR,   CO,    CO2\n";
     for (size_t n = 0; n < gasflow.nPoints(); n++) {
-        print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
-                gasflow.grid(n), Tvec[n], Uvec[n], C7H16vec[n], O2vec[n], CO2vec[n]);
+        print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
+                gasflow.grid(n), Tvec[n], Uvec[n], C2H5OHvec[n], O2vec[n], N2vec[n], ARvec[n], COvec[n], CO2vec[n]);
     }
+
+    // /*for C7H16 flame*/
+    // vector_fp zvec,Tvec,CO2vec,O2vec,N2vec,ARvec,C7H16vec,Uvec;
+
+    // for (size_t n = 0; n < gasflow.nPoints(); n++) {
+    //     Tvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("T"),n));
+    //     C7H16vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("NC7H16"),n));
+    //     O2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("O2"),n));
+    //     CO2vec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("CO2"),n));
+    //     Uvec.push_back(sprayflame.value(flowdomain,gasflow.componentIndex("u"),n));
+    //     zvec.push_back(gasflow.grid(n));
+    // }
+
+    // print("\nAdiabatic flame temperature from equilibrium is: {}\n", Tad);
+    // print("Flame speed for phi={} is {} m/s.\n", phi, Uvec[0]);
+
+    // std::ofstream outfile("./result/nheptane_d50.csv", std::ios::trunc);
+
+    // outfile << "  Grid,   Temperature,   Uvec,  C7H16, O2, CO2\n";
+    // for (size_t n = 0; n < gasflow.nPoints(); n++) {
+    //     print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
+    //             gasflow.grid(n), Tvec[n], Uvec[n], C7H16vec[n], O2vec[n], CO2vec[n]);
+    // }
 
 
     cloud.write();

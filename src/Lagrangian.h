@@ -98,7 +98,7 @@ class Lagrangian
 
         doublereal Ygas(size_t k, size_t j) const
         {
-            return Ygtmp[k][j];
+            return (Ygtmp[k][j]>0 ? Ygtmp[k][j] : 0.0);
         }
 
         //mass transfer rate for one parcel at position xp_n:
@@ -178,17 +178,18 @@ class Lagrangian
         StFlow* gas;
         IdealGasPhase* Thermo;
         // Ethanol fuel;
-        NC7H16 fuel;
+        Ethanol fuel;
 
         doublereal small;
         // //evaluate residual:
         vector_fp TOld_;
         vector_fp TNew_;
+        doublereal uold;
+        doublereal unew;
         
         //gas phase:
         vector_fp z;
         vector_fp ug;
-        vector_fp vg;
         vector_fp mug;
         vector_fp rhog;
         vector_fp Tg;
@@ -205,6 +206,7 @@ class Lagrangian
         doublereal fa_st_m;
         doublereal Phi_over;
         doublereal Phi_gas;
+        doublereal dz;
         //parcel:
         vector_fp dp;
         vector_fp mp;

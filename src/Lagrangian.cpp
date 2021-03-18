@@ -88,6 +88,7 @@ void Lagrangian::evalGasFlow(const vector_fp& solution)
     Sl = ug[0];
     rho_inlet = rhog[0];
     umax = *max_element(ug.begin(),ug.end());
+    dz = z[1] - z[0]; // for uniform mesh
     std::cout << "\nthe max velocity is\t" << umax << std::endl;
     std::cout << "\nthe spray flame speed is\t" << Sl << "\n" << std::endl;
     // for(int k=0; k<Tg.size();++k){
@@ -115,9 +116,9 @@ void Lagrangian::inject(doublereal injectionPosition)
         stfp_[k].push_back(0.0);
     }
     
-
     Np = 1;
     dtlag = Co*(z[1]-z[0])/umax;
+    // dtlag = 4e-6;
     Nd = dtlag*(rho_inlet*Sl/(1+fa_st_m*Phi_gas)*(Phi_over-Phi_gas)*fa_st_m/Md_inj);
     std::cout << "\n>>>>>>>>>>>>>>>>>>>> injection velocity = " << up_inj << std::endl;
     std::cout << "\n>>>>>>>>>>>>>>>>>>>> Nd = " << Nd << std::endl;
@@ -255,6 +256,8 @@ void Lagrangian::solve()
             exit(0);
         }
     }
+
+
 }
 
 void Lagrangian::recordOldValue()
@@ -283,39 +286,81 @@ void Lagrangian::evalTransf()
     doublereal leftLength;
     doublereal rightLength;
     doublereal dz;
+    size_t izfixed = z.size()*0.5;//if grid is even number;
+    doublereal zfixed;
     
     for(size_t iz = 0; iz < z.size()-1; ++iz)
     {
-        dz = z[iz+1] - z[iz] + small;
-        leftz = z[iz];
-        rightz = z[iz+1];
-        for(size_t ip = 0; ip < Np; ++ip)
+        if((iz < (izfixed-1)) || (iz >= (izfixed+1)))
         {
-            if(xp[ip] >= leftz && xp[ip] <= rightz){
-                leftLength = xp[ip] - z[iz];
-                rightLength = z[iz+1] - xp[ip];
-                mtf_[iz] += mtfp_[ip]*(rightLength/dz);
-                mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
-                htf_[iz] += htfp_[ip]*(rightLength/dz); 
-                htf_[iz+1] += htfp_[ip]*(leftLength/dz);
-                for(size_t k=0;k<gas->nsp();++k){
-                    if(k==kf){
-                        stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
-                        stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
-                    }else{
-                        stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
-                        stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
+            dz = z[iz+1] - z[iz] + small;
+            // dz = z[1] - z[0];
+            leftz = z[iz];
+            rightz = z[iz+1];
+            for(size_t ip = 0; ip < Np; ++ip)
+            {
+                if(xp[ip] >= leftz && xp[ip] <= rightz){
+                    leftLength = xp[ip] - z[iz];
+                    rightLength = z[iz+1] - xp[ip];
+                    mtf_[iz] += mtfp_[ip]*(rightLength/dz);
+                    mtf_[iz+1] += mtfp_[ip]*(leftLength/dz);
+                    htf_[iz] += htfp_[ip]*(rightLength/dz); 
+                    htf_[iz+1] += htfp_[ip]*(leftLength/dz);
+                    for(size_t k=0;k<gas->nsp();++k){
+                        if(k==kf){
+                            stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
+                            stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
+                        }else{
+                            stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
+                            stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
+                        }
+                    }
+                }
+                else{
+                    mtf_[iz] += 0.0;
+                    mtf_[iz+1] += 0.0;
+                    htf_[iz] += 0.0;
+                    htf_[iz+1] += 0.0;
+                    for(size_t k=0;k<gas->nsp();++k){
+                        stf_[k][iz] += 0.0;
+                        stf_[k][iz+1] += 0.0;
                     }
                 }
             }
-            else{
-                mtf_[iz] += 0.0;
-                mtf_[iz+1] += 0.0;
-                htf_[iz] += 0.0;
-                htf_[iz+1] += 0.0;
-                for(size_t k=0;k<gas->nsp();++k){
-                    stf_[k][iz] += 0.0;
-                    stf_[k][iz+1] += 0.0;
+        }
+        else
+        {
+            dz = z[izfixed] - z[izfixed-1];
+            leftz = z[iz];
+            rightz = z[iz+1];
+            for(size_t ip = 0; ip < Np; ++ip)
+            {
+                if(xp[ip] >= leftz && xp[ip] <= rightz){
+                    leftLength = xp[ip] - z[iz];
+                    rightLength = z[iz+1] - xp[ip];
+                    mtf_[iz] += 2*mtfp_[ip]*(rightLength/dz);
+                    mtf_[iz+1] += 2*mtfp_[ip]*(leftLength/dz);
+                    htf_[iz] += 2*htfp_[ip]*(rightLength/dz); 
+                    htf_[iz+1] += 2*htfp_[ip]*(leftLength/dz);
+                    for(size_t k=0;k<gas->nsp();++k){
+                        if(k==kf){
+                            stf_[k][iz] += (stfp_[k][ip]+Yg[k][iz]*mtfp_[ip])*(rightLength/dz);
+                            stf_[k][iz+1] += (stfp_[k][ip]+Yg[k][iz+1])*(leftLength/dz);
+                        }else{
+                            stf_[k][iz] += Yg[k][iz]*stfp_[k][ip]*(rightLength/dz);
+                            stf_[k][iz+1] += Yg[k][iz+1]*stfp_[k][ip]*(leftLength/dz);
+                        }
+                    }
+                }
+                else{
+                    mtf_[iz] += 0.0;
+                    mtf_[iz+1] += 0.0;
+                    htf_[iz] += 0.0;
+                    htf_[iz+1] += 0.0;
+                    for(size_t k=0;k<gas->nsp();++k){
+                        stf_[k][iz] += 0.0;
+                        stf_[k][iz+1] += 0.0;
+                    }
                 }
             }
         }
@@ -334,6 +379,7 @@ void Lagrangian::clearParcel()
     up.clear();
     Tp.clear();
     xp.clear();
+    rhop.clear();
 
     mtfd_.clear();
     htfd_.clear();
@@ -422,72 +468,95 @@ doublereal Lagrangian::intpfield(vector_fp& field, vector_fp& grid, doublereal x
     }
 }
 
-// bool Lagrangian::evalRsd(const size_t& Nloop, const vector_fp& solution)
-// {      
-//     if(Nloop == 1)
-//     {
-//         std::cout << "Starting the Two-Way Coupled evaluation!" << std::endl;
-//         Told = Tg.back();
-//         return false;
-//     }
-//     else{
-//         Tnew = Tg.back();
-//         doublereal rsd = 1.0;
-//         std::cout << "\nCheck the Two-Way Coupled residual ...\n" << std::endl;
-//         std::cout << "\n Told = " << Told << std::endl;
-//         std::cout << "\n Tnew = " << Tnew << std::endl;
-//         /*****evaluate the residual*****/
-//         rsd = abs(Tnew - Told)/(Told + small);
-//         std::cout << "\nThe coupled RSD = " << rsd << std::endl;
-//         if(rsd < 2e-3){
-//             std::cout << "\nResidual Checking has been done!\n" << std::endl;
-//             return true;
-//         }
-//         else{
-//             Told = Tnew;
-//             return false;
-//         }
-//     }
-// }
-
 bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, const vector_fp& solution)
-{
+{     
     if(ifAddSpraySource){
-        TNew_.resize(Tg.size());
-        for(size_t ii=0; ii<Tg.size(); ++ii){
-            TNew_[ii] = Tg[ii];
-        }
-        double sum = 0.0;
+        unew = ug[0];
         double rsd = 1.0;
-        for(size_t ii=0; ii<TOld_.size(); ++ii){
-            sum += (abs(TNew_[ii] - TOld_[ii])/TOld_[ii]);
-        }
-        rsd = sum/(TOld_.size()+small);
-        if(rsd < 1e-4){
+        double tmp = std::abs(unew - uold);
+        rsd = tmp/(uold+small);
+        if(rsd < 1e-6){
             std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
             std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
             std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
             return true;
         }else{
-            for(size_t ii=0; ii<TOld_.size(); ++ii){
-                std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
-                std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
-                TOld_[ii] = TNew_[ii];
-                std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
-                return false;
-            }
+            std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
+            std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+            uold = unew;
+            std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
+            return false;
+            
         }
     }
     else{
-        TOld_.resize(Tg.size());
-        for(size_t ii=0; ii<Tg.size(); ++ii){
-            TOld_[ii] = Tg[ii];
-        }
+        uold = ug[0];
         return false;
         // return true;
     }
-
+    // if(ifAddSpraySource){
+    //     unew = Tg.back();
+    //     double rsd = 1.0;
+    //     double tmp = std::abs(unew - uold);
+    //     rsd = tmp/(uold+small);
+    //     if(rsd < 1e-4){
+    //         std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
+    //         std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+    //         std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
+    //         return true;
+    //     }else{
+    //         std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
+    //         std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+    //         uold = unew;
+    //         std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
+    //         return false;
+            
+    //     }
+    // }
+    // else{
+    //     uold = Tg.back();
+    //     return false;
+    //     // return true;
+    // }
 }
+
+// bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, const vector_fp& solution)
+// {
+//     if(ifAddSpraySource){
+//         TNew_.resize(Tg.size());
+//         for(size_t ii=0; ii<Tg.size(); ++ii){
+//             TNew_[ii] = Tg[ii];
+//         }
+//         double sum = 0.0;
+//         double rsd = 1.0;
+//         for(size_t ii=0; ii<TOld_.size(); ++ii){
+//             sum += (abs(TNew_[ii] - TOld_[ii])/TOld_[ii]);
+//         }
+//         rsd = sum/(TOld_.size()+small);
+//         if(rsd < 1e-4){
+//             std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
+//             std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+//             std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
+//             return true;
+//         }else{
+//             for(size_t ii=0; ii<TOld_.size(); ++ii){
+//                 std::cout << "\nTwo way couple step "<< Nloop << "\t failure! \n"<< std::endl;
+//                 std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
+//                 TOld_[ii] = TNew_[ii];
+//                 std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;
+//                 return false;
+//             }
+//         }
+//     }
+//     else{
+//         TOld_.resize(Tg.size());
+//         for(size_t ii=0; ii<Tg.size(); ++ii){
+//             TOld_[ii] = Tg[ii];
+//         }
+//         return false;
+//         // return true;
+//     }
+// }
 
 void Lagrangian::setMpdot(doublereal mdot)
 {
@@ -788,15 +857,16 @@ doublereal Lagrangian::hTransRate(size_t n) //[J/m3*s]
     // std::cout <<"\n"<< n <<"\t"<< qd << "\t"
     //         << qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls) << "\t"
     //         << std::endl;
-    return qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls);
-    // return qd + mddot_*fuel.Lv(Td); 
+    // return qd - mddot_*fuel.cpg(0.5*(Tinf+Tls))*(Tinf-Tls);
+    return qd; 
 }
 
 void Lagrangian::write() const
 {
+    //output the one way couple information:
     double t = 0;
-    std::ofstream fout1("./result/2way_d50.csv");
-    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s]" << std::endl;
+    std::ofstream fout1("./result/1way.csv");
+    fout1 << "# t [s], xp [m], d [micron], d^2 [micron^2], mp [mg], Tp [K], Tg [K], ug [m/s], Sm [kg/m3s], Sh [J/m3s], rho[kg/m3s]" << std::endl;
     for(size_t ip = 0; ip < xp.size(); ++ip){
         if((ip%1) == 0){
             fout1 << (t+ip*dtlag) << ","
@@ -808,8 +878,32 @@ void Lagrangian::write() const
                 << T_[ip] << ","
                 << u_[ip] << ","
                 << mtfp_[ip] << ","
-                << htfp_[ip] << std::endl;
+                << htfp_[ip] << ","
+                << rhop[ip] <<std::endl;
         }
     }
+    //output the two way couple information:
+    std::ofstream fout2("./result/2way.csv");
+    fout2 << "# grid [m], ug [m/s], rhog, Tg [K], Yf, YO2, YOH, YCO, YCO2, phi_g, Sm, Sh, Syf"<< std::endl;
+    for(size_t iz = 0; iz < gas->grid().size()-1; ++iz){
+        if(iz%1==0){
+            fout2 << z[iz] << ","
+                << ug[iz] << ","
+                << rhog[iz] << ","
+                << Tg[iz] << ","
+                << Yg[30][iz] << ","
+                << Yg[4][iz] << ","
+                << Yg[5][iz] << ","
+                << Yg[10][iz] << ","
+                << Yg[11][iz] << ","
+                << Yg[30][iz]/(Yg[0][iz]+Yg[1][iz]+Yg[4][iz])/0.1113 << ","
+                << mtf(iz)/(z[iz+1]-z[iz]) << ","
+                // <<4.167e-3*exp(-(pow((z[iz] - 0.0025),2.0))/(2*2.779e-8))*(1/(1.667e-4*2.5066))<< ","
+                << htf(iz)/(z[iz+1]-z[iz]) << ","
+                // << 2375*exp(-(pow((z[iz] - 0.0025),2.0))/(2*2.778e-8))*(1/(1.667e-4*2.5066)) << ","
+                << (Yg[30][iz]*mtf(iz)/dz - mtf(iz)/dz)<< std::endl;
+        }
+    }
+
 }
 }

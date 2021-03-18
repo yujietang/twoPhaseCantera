@@ -348,7 +348,6 @@ protected:
             m_cp[j] = m_thermo->cp_mass();
         }
     }
-
     //! @name Solution components
     //! @{
 
