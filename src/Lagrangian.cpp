@@ -246,6 +246,7 @@ void Lagrangian::solve()
         /******For parcel******/
         //mass transfer:
         if(jl == ((z.size()-1)/2)-1 || jl == ((z.size()-1)/2)){
+            //If Add new point at the flame front!
             mtfp_.push_back(
                 2*mtfp(n)
             );
