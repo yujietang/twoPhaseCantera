@@ -85,14 +85,14 @@ class Lagrangian
         //Calculate the dmp/dt using the liquid evaporation model:
         //@ n: parcel's index
         doublereal mddot(size_t n);
-        
-        //Calculate the dmp/dt using the theoritcal model:
-        //@ n: parcel's index
-        doublereal mddot_th(size_t n);
-        
+                
         //Calculate the dTp/dt using the liquid evaporation model:
         //@ n: parcel's index
         doublereal Tddot(size_t n);
+
+        doublereal mTransf(size_t n);
+
+        doublereal hTransf(size_t n);
 
         doublereal hTransRate(size_t n);
 
@@ -104,7 +104,7 @@ class Lagrangian
         //mass transfer rate for one parcel at position xp_n:
         doublereal mtfp(size_t n)
         {
-            return Nd*mddot(n);
+            return (Nd/dtlag)*mTransf(n);
         }
 
         //heat transfer rate for one parcel at position xp_n:
@@ -256,7 +256,7 @@ class Lagrangian
 
         //some const:
         const doublereal RR = 8314.0;
-        const doublereal aa = 0.1; //relaxation factor
+        const doublereal aa = 0.2; //relaxation factor
         const doublereal Co = 0.1; //Corrent number of lagrangian
 };
 }

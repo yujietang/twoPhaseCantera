@@ -39,7 +39,7 @@ ax1  = fig.add_subplot(111)
 ax1.plot(z, Sm, label='${S_m}$', c='r')
 ax1.set_xlabel(r'$z [m]$',fontsize=fonts1)
 # ax1.set_ylabel(r'$d^2/{d_0}^2 (-)$',fontsize=fonts1)
-ax1.set_ylabel(r'${S_m}$ $({kg/m3s})$',fontsize=fonts1)
+ax1.set_ylabel(r'${S_m}$ $({kg/m^3s})$',fontsize=fonts1)
 
 # ax1.set_ylim(-2e-5, 0.0)
 # ax1.set_xlabel(r'$z$ $(m)$',fontsize=fonts1)
@@ -51,7 +51,7 @@ ax2 = ax1.twinx()
 # ax2.scatter(z, Sh, label='${S_h}$',c ='b',s=3)
 ax2.plot(z, Sh, label='${S_h}$',c ='b')
 
-ax2.set_ylabel(r'${S_h}$ $({J/m3s})$',fontsize=fonts1)
+ax2.set_ylabel(r'${S_h}$ $({J/m^3s})$',fontsize=fonts1)
 # ax2.set_ylim(298, 330)
 
 # plt.xlim(0.008, 0.01)

@@ -18,12 +18,12 @@ doublereal SprayFreeFlame(bool do_spray)
     doublereal parcelDiameter(20e-6);            // injection droplet diameter [m]
     doublereal injTemperature(300);              // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm);          // injection pressure [Pa]
-    doublereal injectionPosition(0.0);
+    doublereal injectionPosition(0.009);
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 200;          // Mesh Point Number
-    const doublereal domainLength = 0.005;        // Domain Length
+    const size_t meshPointNumber = 300;          // Mesh Point Number
+    const doublereal domainLength = 0.02;        // Domain Length
     bool refine_grid = false;                    // Refined mesh has been turned off
     /************************************************************/
     //                        Gas Flow
@@ -150,16 +150,16 @@ doublereal SprayFreeFlame(bool do_spray)
     sprayflame.Cloud(cloud);
     sprayflame.SprStFlow(gasflow);
     /******Supply the initial guess******/
-    vector_fp locs{0.0, 0.3, 0.7, 1.0};
+    vector_fp locs{0.0, 0.3, 0.5, 0.7, 1.0};
     vector_fp value;
     double uout = inlet.mdot()/rho_out;//TODO: mdot at inlet can not fulfill the continuity
-    value = {uin, uin, uout, uout};
+    value = {uin, uin, 0.5*(uin+uout) ,uout, uout};
     sprayflame.setInitialGuess("u", locs, value);
-    value = {temp, temp, Tad, Tad};
+    value = {temp, temp, (temp+Tad)*0.5, Tad, Tad};
     sprayflame.setInitialGuess("T", locs, value);
     
     for(int k = 0; k < nsp; ++k){
-        value = {yin[k], yin[k], yout[k], yout[k]};
+        value = {yin[k], yin[k], 0.5*(yin[k]+yout[k]),yout[k], yout[k]};
         sprayflame.setInitialGuess(gas.speciesName(k), locs, value);
     }
 
@@ -169,7 +169,7 @@ doublereal SprayFreeFlame(bool do_spray)
 
     sprayflame.showSolution();
     int flowdomain = 1;
-    int loglevel = 1;
+    int loglevel = 7;
 
     /**********Solve freely propagating flame with spray cloud**********/
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
