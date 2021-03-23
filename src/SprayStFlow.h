@@ -154,8 +154,8 @@ public:
     //! mass flux.
     void setFreeFlow() {
         m_type = cFreeFlow;
-        // m_dovisc = false;
-        m_dovisc = true;
+        m_dovisc = false;
+        // m_dovisc = true;
     }
 
     //! Set flow configuration for axisymmetric counterflow or burner-stabilized

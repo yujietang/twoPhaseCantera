@@ -376,7 +376,7 @@ void Sim1D::solve(int loglevel, bool refine_grid, bool do_spray)
 
         cloud->evalTransf();//import the liquid source into Gas phase flow.
 
-        cloud->write();
+        cloud->write(Nloop);
         // convg = cloud->evalRsd(Nloop, m_x);
         convg = cloud->evalResidual(Nloop, ifAddSpraySource, m_x);
         

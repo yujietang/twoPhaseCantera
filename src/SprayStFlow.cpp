@@ -404,7 +404,6 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
             // set residual of poisson's equ to zero
             rsd[index(c_offset_E, j)] = x[index(c_offset_E, j)];
         } else { // interior points
-            // std::cout << "spray source bool = " << spray_source << std::endl;
             evalContinuity(j, x, rsd, diag, rdt);
             // set residual of poisson's equ to zero
             rsd[index(c_offset_E, j)] = x[index(c_offset_E, j)];

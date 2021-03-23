@@ -15,14 +15,14 @@ doublereal SprayFreeFlame(bool do_spray)
     /************************************************************/
     //                       Injection
     /************************************************************/
-    doublereal parcelDiameter(20e-6);            // injection droplet diameter [m]
+    doublereal parcelDiameter(50e-6);            // injection droplet diameter [m]
     doublereal injTemperature(300);              // injection parcel's temperature [K]
     doublereal injPressure(1.0*OneAtm);          // injection pressure [Pa]
     doublereal injectionPosition(0.009);
     /************************************************************/
     //                          Mesh
     /************************************************************/
-    const size_t meshPointNumber = 300;          // Mesh Point Number
+    const size_t meshPointNumber = 301;          // Mesh Point Number
     const doublereal domainLength = 0.02;        // Domain Length
     bool refine_grid = false;                    // Refined mesh has been turned off
     /************************************************************/
@@ -44,7 +44,7 @@ doublereal SprayFreeFlame(bool do_spray)
     vector_fp x(nsp, 0.0);
     doublereal ax = C_atoms + H_atoms/4.0 - O_atoms/2.0; // air consumption
     doublereal fa_stoic_mole = 1.0 / (4.77 * ax);        // fuel / air mole ratio at stoic state
-    doublereal fa_stoic_mass = 0.1113;  
+    doublereal fa_stoic_mass = 0.1113; //for air  
     // Species' mole fraction when the condition is fuel/oxidizer flow:
     x[gas.speciesIndex("C2H5OH")] = 1.0; 
     x[gas.speciesIndex("O2")] = 0.21 / phi / fa_stoic_mole;
@@ -135,7 +135,6 @@ doublereal SprayFreeFlame(bool do_spray)
     inlet.setMoleFractions(x.data());
     doublereal mdot = uin*rho_in;
     inlet.setMdot(mdot);
-    cloud.setMpdot(mdot);
     inlet.setTemperature(temp);
     /******Create the outlet******/
     Outlet1D outlet;
@@ -169,7 +168,7 @@ doublereal SprayFreeFlame(bool do_spray)
 
     sprayflame.showSolution();
     int flowdomain = 1;
-    int loglevel = 7;
+    int loglevel = 1;
 
     /**********Solve freely propagating flame with spray cloud**********/
     sprayflame.setFixedTemperature(0.5 * (temp + Tad));
@@ -232,9 +231,6 @@ doublereal SprayFreeFlame(bool do_spray)
     //     print(outfile, " {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}, {:11.3e}\n",
     //             gasflow.grid(n), Tvec[n], Uvec[n], C7H16vec[n], O2vec[n], CO2vec[n]);
     // }
-
-
-    cloud.write();
     return flameSpeed_mix;
 }
 

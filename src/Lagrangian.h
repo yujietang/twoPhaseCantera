@@ -32,7 +32,7 @@ class Lagrangian
                    const size_t fuelIndex);
 
         //set up the injection properties:
-        void setupInjection(doublereal d, doublereal Tp, doublereal mdotp);
+        void setupInjection(doublereal d, doublereal Tp);
         
         //set up gas-phase information:
         void evalGasFlow(const vector_fp& solution);
@@ -74,13 +74,6 @@ class Lagrangian
         //Calculate the residual during iteration:
         bool evalRsd(const size_t& Nloop, const vector_fp& solution);
         bool evalResidual(const size_t& Nloop, const bool ifAddSpraySource, const vector_fp& solution);
-        //set the mass flux of liquid droplets:
-        //@ mdot: gas phase mass flux.
-        void setMpdot(doublereal mdot);
-
-        const doublereal getmp(size_t n) const{
-            return mp[n];
-        }
 
         //Calculate the dmp/dt using the liquid evaporation model:
         //@ n: parcel's index
@@ -113,30 +106,15 @@ class Lagrangian
             return Nd*hTransRate(n);
         }
 
-        doublereal stfp(size_t k, size_t n)
-        {
-            if(k==kf){
-                return -Nd*mddot(n);
-            }
-            else{
-                return Nd*mddot(n);
-            }
-        }
-
         //mass transfer rate at grid points j [kg/s]:
         doublereal mtf(size_t j) const
         {
-            return aa*mtf_[j] + (1-aa)*mtfOld_[j];
+            return am*mtf_[j] + (1-am)*mtfOld_[j];
         }
 
         doublereal htf(size_t j) const
         {
-            return aa*htf_[j] + (1-aa)*htfOld_[j];
-        }
-
-        doublereal stf(size_t k, size_t j) const
-        {
-            return aa*stf_[k][j] + (1-aa)*stfOld_[k][j];
+            return at*htf_[j] + (1-at)*htfOld_[j];
         }
 
         void setFuel(const std::vector<std::string>& fuelName)
@@ -172,7 +150,7 @@ class Lagrangian
             }
         }
 
-        void write() const;
+        void write(size_t n) const;
     
     private:
         StFlow* gas;
@@ -228,7 +206,6 @@ class Lagrangian
         size_t kf; // fuel index in solution vector
         doublereal p0;
         doublereal d_inj; //injection diameter.
-        doublereal Mdotp_inj; //injection parcel's mass flow rate.
         doublereal z_inj; // distance between the liquid inlet and gas inlet
         doublereal Tp_inj; //injection temperature.
         doublereal p_inj; //injection pressure.
@@ -256,7 +233,8 @@ class Lagrangian
 
         //some const:
         const doublereal RR = 8314.0;
-        const doublereal aa = 0.2; //relaxation factor
+        const doublereal am = 1.0; //relaxation factor
+        const doublereal at = 1.0;
         const doublereal Co = 0.1; //Corrent number of lagrangian
 };
 }

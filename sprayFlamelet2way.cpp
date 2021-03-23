@@ -121,7 +121,6 @@ int main()
     inlet.setMoleFractions(x.data());
     doublereal mdot = uin*rho_in;
     inlet.setMdot(mdot);
-    cloud.setMpdot(mdot);
     inlet.setTemperature(temp);
     /******Create the outlet******/
     Outlet1D outlet;
