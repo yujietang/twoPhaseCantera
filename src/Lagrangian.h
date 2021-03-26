@@ -155,8 +155,8 @@ class Lagrangian
     private:
         StFlow* gas;
         IdealGasPhase* Thermo;
-        // Ethanol fuel;
         Ethanol fuel;
+        // NC7H16 fuel;
 
         doublereal small;
         // //evaluate residual:
@@ -233,8 +233,8 @@ class Lagrangian
 
         //some const:
         const doublereal RR = 8314.0;
-        const doublereal am = 1.0; //relaxation factor
-        const doublereal at = 1.0;
+        const doublereal am = 0.1; //relaxation factor
+        const doublereal at = 0.1;
         const doublereal Co = 0.1; //Corrent number of lagrangian
 };
 }

@@ -438,7 +438,7 @@ void StFlow::evalResidual(double* x, double* rsd, int* diag,
                 // spray 2-way coupled:
                 if(spray_source){
                     rsd[index(c_offset_Y + k,j)] += (cloud->mtf(j)/m_dz[j])*Y(x,k,j)/m_rho[j];
-                    if(k == 30)
+                    if(k == 59)
                     {
                         rsd[index(c_offset_Y + k,j)] += (-cloud->mtf(j)/m_dz[j])/m_rho[j];                    
                     }

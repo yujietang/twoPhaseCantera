@@ -250,7 +250,7 @@ void Lagrangian::recordOldValue()
 
 void Lagrangian::evalTransf()
 {
-    // this->recordOldValue();
+    this->recordOldValue();
     //resize the vector of quantities transfer:
     htf_.clear();
     mtf_.clear();
@@ -396,7 +396,7 @@ bool Lagrangian::evalResidual(const size_t& Nloop, const bool ifAddSpraySource, 
         double rsd = 1.0;
         double tmp = std::abs(unew - uold);
         rsd = tmp/(uold+small);
-        if(rsd < 1e-6){
+        if(rsd < 1e-5){
             std::cout << "\nTwo way couple step "<< Nloop << "\t success!"<< std::endl;
             std::cout << "Residual =\t" << rsd << "\n" <<std::endl;
             std::cout << "the flame temperature is \t" << Tg.back() << "\n" << std::endl;

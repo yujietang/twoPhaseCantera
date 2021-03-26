@@ -214,7 +214,7 @@ void Sim1D::setInletGasFlow()
 {
     // comp = (kf + 5)
     //at the inlet point:
-    setValue(0, 50, 0, 0.0);
+    setValue(0, 35, 0, 0.0);
 }
 
 int Sim1D::newtonSolve(int loglevel)
